@@ -77,18 +77,21 @@ command! -nargs=1 -bang BufferMove             call s:move_current_buffer_to(<f-
 command!          -bang BufferPick             call bufferline#pick_buffer()
 command!                BufferPin              lua require'bufferline.state'.toggle_pin()
 
+command!          -bang BufferOrderByBufferNumber   call bufferline#order_by_buffer_number()
 command!          -bang BufferOrderByDirectory call bufferline#order_by_directory()
 command!          -bang BufferOrderByLanguage  call bufferline#order_by_language()
 command!          -bang BufferOrderByTime      call bufferline#order_by_time()
+command!          -bang BufferOrderByWindowNumber    call bufferline#order_by_window_number()
 
 command! -bang -complete=buffer -nargs=?
-                      \ BufferClose            call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>)
+                      \ BufferClose            call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>, <q-mods>)
 command! -bang -complete=buffer -nargs=?
-                      \ BufferDelete           call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>)
+                      \ BufferDelete           call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>, <q-mods>)
 command! -bang -complete=buffer -nargs=?
-                      \ BufferWipeout          call bufferline#bbye#delete('bwipeout', <q-bang>, <q-args>)
+                      \ BufferWipeout          call bufferline#bbye#delete('bwipeout', <q-bang>, <q-args>, <q-mods>)
 
 command!                BufferCloseAllButCurrent   lua require'bufferline.state'.close_all_but_current()
+command!                BufferCloseAllButPinned    lua require'bufferline.state'.close_all_but_pinned()
 command!                BufferCloseBuffersLeft     lua require'bufferline.state'.close_buffers_left()
 command!                BufferCloseBuffersRight    lua require'bufferline.state'.close_buffers_right()
 
@@ -105,12 +108,14 @@ let s:DEFAULT_OPTIONS = {
 \ 'exclude_name': v:null,
 \ 'icon_close_tab': '',
 \ 'icon_close_tab_modified': '●',
-\ 'icon_pinned': '車',
+\ 'icon_pinned': '',
 \ 'icon_separator_active':   '▎',
 \ 'icon_separator_inactive': '▎',
 \ 'icons': v:true,
 \ 'icon_custom_colors': v:false,
 \ 'idle_timeout': 5,
+\ 'insert_at_start': v:false,
+\ 'insert_at_end': v:false,
 \ 'letters': 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP',
 \ 'maximum_padding': 4,
 \ 'maximum_length': 30,
@@ -176,6 +181,10 @@ function! bufferline#pick_buffer()
    call luaeval("require'bufferline.jump_mode'.activate()")
 endfunc
 
+function! bufferline#order_by_buffer_number()
+   call luaeval("require'bufferline.state'.order_by_buffer_number()")
+endfunc
+
 function! bufferline#order_by_directory()
    call luaeval("require'bufferline.state'.order_by_directory()")
 endfunc
@@ -184,8 +193,13 @@ function! bufferline#order_by_language()
    call luaeval("require'bufferline.state'.order_by_language()")
 endfunc
 
+
 function! bufferline#order_by_time()
    call luaeval("require'bufferline.state'.order_by_time()")
+endfunc
+
+function! bufferline#order_by_window_number()
+   call luaeval("require'bufferline.state'.order_by_window_number()")
 endfunc
 
 function! bufferline#close(abuf)
@@ -206,6 +220,7 @@ endfunc
 
 function! s:on_buffer_close(bufnr)
    call luaeval("require'bufferline.jump_mode'.unassign_letter_for(_A)", a:bufnr)
+   call bufferline#update_async() " BufDelete is called before buffer deletion
 endfunc
 
 function! s:check_modified()
@@ -231,7 +246,7 @@ function! BufferlineMainClickHandler(minwid, clicks, btn, modifiers) abort
    if a:btn =~ 'm'
       call bufferline#bbye#delete('bdelete', '', a:minwid)
    else
-      execute 'buffer ' . a:minwid
+      call luaeval("require'bufferline.state'.open_buffer_in_listed_window(_A)", a:minwid)
    end
 endfunction
 

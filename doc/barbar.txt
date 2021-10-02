@@ -56,6 +56,7 @@ The name of each command should be descriptive enough for you to use it.
    "                          :BufferWipeout<CR>
    " Close commands
    "                          :BufferCloseAllButCurrent<CR>
+   "                          :BufferCloseAllButPinned<CR>
    "                          :BufferCloseBuffersLeft<CR>
    "                          :BufferCloseBuffersRight<CR>
 
@@ -63,8 +64,10 @@ The name of each command should be descriptive enough for you to use it.
    nnoremap <silent> <C-s>    :BufferPick<CR>
 
    " Sort automatically by...
+   nnoremap <silent> <Space>bb :BufferOrderByBufferNumber<CR>
    nnoremap <silent> <Space>bd :BufferOrderByDirectory<CR>
    nnoremap <silent> <Space>bl :BufferOrderByLanguage<CR>
+   nnoremap <silent> <Space>bw :BufferOrderByWindowNumber<CR>
 
    " Other:
    " :BarbarEnable - enables barbar (enabled by default)
@@ -170,8 +173,9 @@ Here are the groups that you should define if you'd like to style Barbar.
 
 	- If `v:false`, show neither |devicons| nor buffer numbers.
 	- If `v:true`, show |devicons| for each buffer's |'filetype'|.
-	- If `"numbers"`, show the buffer number for current buffer.
-	- If `"both"`, show the buffer number and |devicons|.
+	- If `"buffer_numbers"`, show the buffer number for current buffer.
+	- If `"numbers"`, show the buffer index for current buffer.
+	- If `"both"`, show the buffer index and |devicons|.
 
 					   *g:bufferline.icon_custom_colors*
 `g:bufferline.icon_custom_colors`	boolean, string (default v:false)
@@ -204,6 +208,19 @@ Here are the groups that you should define if you'd like to style Barbar.
 `g:bufferline.icon_pinned`                            string (default '車')
 
 	The icon used to indicate that a buffer is pinned.
+
+			                         *g:bufferline.insert_at_start*
+`g:bufferline.insert_at_start`                         boolean (default v:false)
+
+	If true, new buffers appear at the start of the list. Default is to
+	open after the current buffer.
+	Has priority over `g:bufferline.insert_at_end`
+
+			                         *g:bufferline.insert_at_end*
+`g:bufferline.insert_at_end`                         boolean (default v:false)
+
+	If true, new buffers appear at the end of the list. Default is to
+	open after the current buffer.
 
 						    *g:bufferline.closable*
 `g:bufferline.closable`		boolean	(default v:true)

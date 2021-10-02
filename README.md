@@ -1,5 +1,5 @@
 
-![header](./static/header.gif)
+![demo](./static/demo.gif)
 
 <h1 align="center">
   barbar.nvim
@@ -18,12 +18,9 @@ any buffer by simply typing their target letter. Even better, the target letter
 stays constant for the lifetime of the buffer, so if you're working with a set of
 files you can even type the letter ahead from memory.
 
-**⚠️  NOTE: Recent neovim build (0.5) required (november 2020 & up)**
-
-
 ##### Table of content
- - [Features](#features)
  - [Install](#install)
+ - [Features](#features)
  - [Usage](#usage)
  - [Options](#options)
  - [Highlighting](#highlighting)
@@ -31,55 +28,7 @@ files you can even type the letter ahead from memory.
  - [Known Issues](#known-issues)
  - [About Barbar](#about)
 
-## Features
-
-##### Re-order tabs
-
-![reorder](./static/reorder.gif)
-
-##### Auto-sizing tabs, fill the space when available
-
-![resize](./static/resize.gif)
-
-##### Jump-to-buffer
-
-![jump](./static/jump.gif)
-
-Letters stay constant for the lifetime of the buffer. By default, letters are assigned
-based on buffer name, eg **README** will get letter **r**. You can change this so that
-letters are assigned based on usability: home row (`asdfjkl;gh`) first, then other rows.
-
-##### Sort tabs automatically
-
-![jump](./static/sort.gif)
-
-`:BufferOrderByDirectory` and `:BufferOrderByLanguage`
-
-##### Clickable & closable tabs
-
-![click](./static/click.gif)
-
-Left-click to go, middle-click or close button to close. Don't forget to `set mouse+=a`.
-
-##### Unique names when filenames match
-
-![unique-name](./static/unique-name.png)
-
-##### bbye.vim for closing buffers
-
-A modified version of [bbye.vim](https://github.com/moll/vim-bbye) is included in this
-plugin to close buffers without messing with your window layout and more. Available
-as `BufferClose` and `bufferline#bbye#delete(buf)`.
-
-##### Scrollable tabs, to always show the current buffer
-
-![scroll](./static/scroll.gif)
-
 ## Install
-
-Is one dependency bad for one plugin? Yes it is. But is Barbar a very good
-tabline plugin? Also yes. Do you now understand why the Install section is
-strategically placed after the cool demos? Yes again.
 
 #### Using [vim-plug](https://github.com/junegunn/vim-plug)
 ```vim
@@ -102,6 +51,55 @@ install [nerd fonts](https://www.nerdfonts.com/).
 ##### Requirements
  - Neovim `0.5`
  - `set termguicolors`
+
+## Features
+
+##### Re-order tabs
+
+![reorder](./static/reorder.gif)
+
+##### Auto-sizing tabs, fill the space when available
+
+![resize](./static/resize.gif)
+
+##### Jump-to-buffer mode
+
+![jump](./static/jump.gif)
+
+Type a letter to jump to a buffer. Letters stay constant for the lifetime of the buffer.
+By default, letters are assigned based on buffer name, eg `README.md` will get letter `r`.
+You can change this so that letters are assigned based on usability:
+home row (`asdfjkl;gh`) first, then other rows.
+
+##### Sort tabs automatically
+
+![jump](./static/sort.gif)
+
+`:BufferOrderByDirectory`, `:BufferOrderByLanguage`, `:BufferOrderByWindowNumber`, `:BufferOrderByBufferNumber`
+
+##### Clickable & closable tabs
+
+![click](./static/click.gif)
+
+Left-click to go, middle-click or close button to close. Don't forget to `set mouse+=a`.
+
+##### Unique names when filenames match
+
+![unique-name](./static/unique-name.png)
+
+##### Pinned buffers
+
+![pinned](./static/pinned.png)
+
+##### bbye.vim for closing buffers
+
+A modified version of [bbye.vim](https://github.com/moll/vim-bbye) is included in this
+plugin to close buffers without messing with your window layout and more. Available
+as `BufferClose` and `bufferline#bbye#delete(buf)`.
+
+##### Scrollable tabs, to always show the current buffer
+
+![scroll](./static/scroll.gif)
 
 ## Usage
 
@@ -138,14 +136,17 @@ nnoremap <silent>    <A-c> :BufferClose<CR>
 "                          :BufferWipeout<CR>
 " Close commands
 "                          :BufferCloseAllButCurrent<CR>
+"                          :BufferCloseAllButPinned<CR>
 "                          :BufferCloseBuffersLeft<CR>
 "                          :BufferCloseBuffersRight<CR>
 " Magic buffer-picking mode
 nnoremap <silent> <C-s>    :BufferPick<CR>
 " Sort automatically by...
+nnoremap <silent> <Space>bb :BufferOrderByBufferNumber<CR>
 nnoremap <silent> <Space>bd :BufferOrderByDirectory<CR>
 nnoremap <silent> <Space>bl :BufferOrderByLanguage<CR>
 nnoremap <silent> <Space>bt :BufferOrderByTime<CR>
+nnoremap <silent> <Space>bw :BufferOrderByWindowNumber<CR>
 
 " Other:
 " :BarbarEnable - enables barbar (enabled by default)
@@ -186,6 +187,7 @@ map('n', '<A-c>', ':BufferClose<CR>', opts)
 -- Magic buffer-picking mode
 map('n', '<C-p>', ':BufferPick<CR>', opts)
 -- Sort automatically by...
+map('n', '<Space>bb', ':BufferOrderByBufferNumber<CR>', opts)
 map('n', '<Space>bd', ':BufferOrderByDirectory<CR>', opts)
 map('n', '<Space>bl', ':BufferOrderByLanguage<CR>', opts)
 
@@ -201,6 +203,10 @@ map('n', '<Space>bl', ':BufferOrderByLanguage<CR>', opts)
 ```vim
 " NOTE: If barbar's option dict isn't created yet, create it
 let bufferline = get(g:, 'bufferline', {})
+
+" New tabs are opened next to the currently selected tab.
+" Enable to insert them in buffer number order.
+let bufferline.add_in_buffer_number_order = v:false
 
 " Enable/disable animations
 let bufferline.animation = v:true
@@ -224,6 +230,7 @@ let bufferline.exclude_ft = ['javascript']
 let bufferline.exclude_name = ['package.json']
 
 " Enable/disable icons
+" if set to 'buffer_number', will show buffer number in the tabline
 " if set to 'numbers', will show buffer index in the tabline
 " if set to 'both', will show buffer index and icons in the tabline
 let bufferline.icons = v:true
@@ -242,6 +249,11 @@ let bufferline.icon_pinned = '車'
 " After this long with no activity, consider the user idle
 " (used for BufferOrderByTime)
 let bufferline.idle_timeout = 5
+
+" If true, new buffers will be inserted at the start/end of the list.
+" Default is to insert after current buffer.
+let bufferline.insert_at_start = v:false
+let bufferline.insert_at_end = v:false
 
 " Sets the maximum padding width with which to surround each tab.
 let bufferline.maximum_padding = 4
@@ -318,6 +330,11 @@ vim.g.bufferline = {
   -- After this long with no activity, consider the user idle
   -- (used for BufferOrderByTime)
   idle_timeout = 5,
+
+  -- If true, new buffers will be inserted at the start/end of the list.
+  -- Default is to insert after current buffer.
+  insert_at_end = false,
+  insert_at_start = false,
 
   -- Sets the maximum padding width with which to surround each tab
   maximum_padding = 1,
