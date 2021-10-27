@@ -217,6 +217,9 @@ let bufferline.auto_hide = v:false
 " Enable/disable current/total tabpages indicator (top right corner)
 let bufferline.tabpages = v:true
 
+" Tabs only show buffers that were opened in that tab
+let bufferline.tab_local_buffers = v:false
+
 " Enable/disable close button
 let bufferline.closable = v:true
 
@@ -296,6 +299,9 @@ vim.g.bufferline = {
 
   -- Enable/disable current/total tabpages indicator (top right corner)
   tabpages = true,
+
+  -- Tabs only show buffers that were opened in that tab
+  tab_local_buffers = false,
 
   -- Enable/disable close button
   closable = true,

@@ -32,16 +32,48 @@ local ANIMATION_MOVE_DURATION   = 150
 --------------------------------
 -- Section: Application state --
 --------------------------------
+local function get_tabpage()
+  if vim.g.bufferline.tab_local_buffers then
+    return vim.api.nvim_get_current_tabpage()
+  else
+    return 0
+  end
+end
 
-local m = {
+local m = setmetatable({
   is_picking_buffer = false,
   scroll = 0,
   scroll_current = 0,
-  buffers = {},
+  buffers_by_tab = {},
   buffers_by_id = {},
   offset = 0,
   offset_text = '',
-}
+}, {
+  __index = function(self, key)
+    if key == 'buffers' then
+      local tabpage = get_tabpage()
+      local buffers = self.buffers_by_tab[tabpage]
+      if not buffers then
+        buffers = {}
+        self.buffers_by_tab[tabpage] = buffers
+      end
+      return buffers
+    end
+    return rawget(self, key)
+  end,
+  __newindex = function(self, key, value)
+    if key == 'buffers' then
+      local tabpage = get_tabpage()
+      self.buffers_by_tab[tabpage] = value
+    else
+      rawset(self, key, value)
+    end
+  end
+})
+
+-- On startup, make sure all buffers are visible in the tab
+m.buffers =
+  filter(function(b) return utils.is_displayed(vim.g.bufferline, b) end, nvim.list_bufs())
 
 function m.new_buffer_data()
   return {
@@ -292,16 +324,30 @@ end
 
 local function get_buffer_list()
   local opts = vim.g.bufferline
-  local buffers = nvim.list_bufs()
   local result = {}
-
-  for i, buffer in ipairs(buffers) do
-    if utils.is_displayed(opts, buffer) then
-      table.insert(result, buffer)
+  if opts.tab_local_buffers then
+    local tabpage = vim.api.nvim_get_current_tabpage()
+    for _,winid in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+      local buffer = vim.api.nvim_win_get_buf(winid)
+      if utils.is_displayed(opts, buffer) then
+        result[buffer] = true
+      end
     end
-  end
 
-  return result
+    for _, buffer in ipairs(m.buffers) do
+      if not result[buffer] and utils.is_displayed(opts, buffer) then
+        result[buffer] = true
+      end
+    end
+    return vim.tbl_keys(result)
+  else
+    for _,buffer in pairs(nvim.list_bufs()) do
+      if utils.is_displayed(opts, buffer) then
+        table.insert(result, buffer)
+      end
+    end
+    return result
+  end
 end
 
 function m.update_names()
@@ -367,8 +413,9 @@ function m.get_updated_buffers(update_names)
     open_buffers(new_buffers)
   end
 
+  local opts = vim.g.bufferline
   m.buffers =
-    filter(function(b) return nvim.buf_is_valid(b) end, m.buffers)
+    filter(function(b) return utils.is_displayed(opts, b) end, m.buffers)
 
   if did_change or update_names then
     m.update_names()
@@ -696,20 +743,28 @@ local function on_pre_save()
   end
 
   local bufnames = {}
-  for _,bufnr in ipairs(m.buffers) do
-    local name = vim.api.nvim_buf_get_name(bufnr)
-    if use_relative_file_paths then
-      name = vim.fn.fnamemodify(name, ':~:.')
+  for tabpage, buffers in pairs(m.buffers_by_tab) do
+    if vim.api.nvim_tabpage_is_valid(tabpage) then
+      local namelist = {}
+      for _,bufnr in ipairs(buffers) do
+        local name = vim.api.nvim_buf_get_name(bufnr)
+        if use_relative_file_paths then
+          name = vim.fn.fnamemodify(name, ':~:.')
+        end
+        -- escape quotes
+        name = string.gsub(name, '"', '\\"')
+        table.insert(namelist, string.format('"%s"', name))
+      end
+      -- Using numeric index instead of tabpage because when we restore the
+      -- session the tabpage numbers are lost
+      table.insert(bufnames, string.format('{%s}', table.concat(namelist, ',')))
     end
-    -- escape quotes
-    name = string.gsub(name, '"', '\\"')
-    table.insert(bufnames, string.format('"%s"', name))
   end
-  local bufarr = string.format('{%s}', table.concat(bufnames, ','))
+  local serialized = string.format('{%s}', table.concat(bufnames, ','))
   local commands = vim.g.session_save_commands
   table.insert(commands, '" barbar.nvim')
   table.insert(commands,
-    string.format([[lua require'bufferline.state'.restore_buffers(%s)]], bufarr))
+    string.format([[lua require'bufferline.state'.restore_buffers(%s)]], serialized))
   vim.g.session_save_commands = commands
 end
 
@@ -717,7 +772,7 @@ local function restore_buffers(bufnames)
   -- Close all empty buffers. Loading a session may call :tabnew several times
   -- and create useless empty buffers.
   for _,bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.fn.bufname(bufnr) == ''
+    if vim.api.nvim_buf_get_name(bufnr) == ''
       and vim.api.nvim_buf_get_option(bufnr, 'buftype') == ''
       and vim.api.nvim_buf_line_count(bufnr) == 1
       and vim.api.nvim_buf_get_lines(bufnr, 0, 1, true)[1] == '' then
@@ -725,10 +780,18 @@ local function restore_buffers(bufnames)
     end
   end
 
-  m.buffers = {}
-  for _,name in ipairs(bufnames) do
-    local bufnr = vim.fn.bufadd(name)
-    table.insert(m.buffers, bufnr)
+  m.buffers_by_tab = {}
+  for tabpage, buffers in pairs(bufnames) do
+    if type(buffers) ~= 'table' then
+      vim.api.nvim_err_write("Loaded session was saved with old version of barbar. Graceful restore failed.\n")
+      return
+    end
+    local bufnrs = {}
+    m.buffers_by_tab[tabpage] = bufnrs
+    for _, name in ipairs(buffers) do
+      local bufnr = vim.fn.bufadd(name)
+      table.insert(bufnrs, bufnr)
+    end
   end
   m.update()
 end
