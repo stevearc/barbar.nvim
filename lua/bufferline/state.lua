@@ -646,6 +646,19 @@ local function hide_buffer()
   m.update()
 end
 
+local function hide_all_but_current()
+  local curbuf = vim.api.nvim_get_current_buf()
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+    local winbuf = vim.api.nvim_win_get_buf(window)
+    if winbuf ~= curbuf then
+      vim.api.nvim_win_set_buf(window, curbuf)
+    end
+  end
+  m.buffers = {curbuf}
+  m.update()
+end
+
 local function close_all_but_current()
   local current = nvim.get_current_buf()
   local buffers = m.buffers
@@ -861,6 +874,7 @@ m.close_buffers_right = close_buffers_right
 m.close_buffers_left = close_buffers_left
 
 m.hide_buffer = hide_buffer
+m.hide_all_but_current = hide_all_but_current
 
 m.is_pinned = is_pinned
 m.move_current_buffer_to = move_current_buffer_to
