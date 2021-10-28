@@ -97,6 +97,8 @@ command!                BufferCloseBuffersRight    lua require'bufferline.state'
 command!                BufferHide                 lua require'bufferline.state'.hide_buffer()
 command!                BufferHideAllButCurrent    lua require'bufferline.state'.hide_all_but_current()
 
+command!                TabClone                   lua require'bufferline.state'.clone_tab()
+
 "=================
 " Section: Options
 "=================

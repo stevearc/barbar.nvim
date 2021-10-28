@@ -659,6 +659,13 @@ local function hide_all_but_current()
   m.update()
 end
 
+local function clone_tab()
+  local visible_buffers = m.buffers
+  vim.cmd('tab split')
+  m.buffers = vim.deepcopy(visible_buffers)
+  m.update()
+end
+
 local function close_all_but_current()
   local current = nvim.get_current_buf()
   local buffers = m.buffers
@@ -875,6 +882,8 @@ m.close_buffers_left = close_buffers_left
 
 m.hide_buffer = hide_buffer
 m.hide_all_but_current = hide_all_but_current
+
+m.clone_tab = clone_tab
 
 m.is_pinned = is_pinned
 m.move_current_buffer_to = move_current_buffer_to
