@@ -596,49 +596,58 @@ end
 
 -- Close commands
 
-local function get_fallback_buffer()
-  local buffer = vim.api.nvim_get_current_buf()
+local function bufnr_from_idx(bufidx)
+  if not bufidx then
+    return vim.api.nvim_get_current_buf()
+  elseif bufidx > 0 and bufidx <= #m.buffers then
+    return m.buffers[bufidx]
+  end
+end
+
+local function get_fallback_buffer(bufnr)
   local tabpage = vim.api.nvim_get_current_tabpage()
   for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
     local winbuf = vim.api.nvim_win_get_buf(window)
-    if winbuf ~= buffer then
+    if winbuf ~= bufnr then
       return winbuf
     end
   end
 
-  local replacement = nil
+  local found = false
   for i, listed_buf in ipairs(m.buffers) do
-    if listed_buf == buffer then
+    if listed_buf == bufnr then
+      found = true
       if i > 1 then
-        replacement = m.buffers[i-1]
+        return m.buffers[i-1]
       elseif i < #m.buffers then
-        replacement = m.buffers[i+1]
+        return m.buffers[i+1]
       end
-      break
     end
   end
 
-  if not replacement then
-    replacement = m.buffers[1]
+  if not found and not vim.tbl_isempty(m.buffers) then
+    return m.buffers[1]
   end
 
-  return replacement or vim.api.nvim_create_buf(true, false)
+  return nil
 end
 
-local function hide_buffer()
-  local curbuf = vim.api.nvim_get_current_buf()
-  local new_buffer = get_fallback_buffer()
+local function hide_buffer(bufnr)
+  if bufnr == nil or bufnr == 0 then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
+  local new_buffer = get_fallback_buffer(bufnr) or vim.api.nvim_create_buf(true, false)
 
   local tabpage = vim.api.nvim_get_current_tabpage()
   for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
     local winbuf = vim.api.nvim_win_get_buf(window)
-    if winbuf == curbuf then
+    if winbuf == bufnr then
       vim.api.nvim_win_set_buf(window, new_buffer)
     end
   end
 
   for i, buffer in ipairs(m.buffers) do
-    if buffer == curbuf then
+    if bufnr == buffer then
       table.remove(m.buffers, i)
       break
     end
@@ -646,17 +655,22 @@ local function hide_buffer()
   m.update()
 end
 
+local function hide_buffer_idx(bufidx)
+  local bufnr = bufnr_from_idx(bufidx)
+  if bufnr then
+    hide_buffer(bufnr)
+  else
+    vim.api.nvim_err_writeln(string.format("Could not find buffer at index %s", bufidx))
+  end
+end
+
 local function hide_all_but_current()
   local curbuf = vim.api.nvim_get_current_buf()
-  local tabpage = vim.api.nvim_get_current_tabpage()
-  for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
-    local winbuf = vim.api.nvim_win_get_buf(window)
-    if winbuf ~= curbuf then
-      vim.api.nvim_win_set_buf(window, curbuf)
+  for _, bufnr in ipairs(m.buffers) do
+    if bufnr ~= curbuf then
+      hide_buffer(bufnr)
     end
   end
-  m.buffers = {curbuf}
-  m.update()
 end
 
 local function clone_tab()
@@ -666,12 +680,51 @@ local function clone_tab()
   m.update()
 end
 
+local function delete_buffer(force, bufnr)
+  if bufnr == nil or bufnr == 0 then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
+
+  if vim.api.nvim_buf_get_option(bufnr, 'modified') then
+    if not force and vim.o.confirm then
+      vim.api.nvim_err_writeln("E89: No write since last change for buffer " .. bufnr .. " (add ! to override)")
+      return
+    end
+    vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'hide')
+  end
+
+  local newbuf = get_fallback_buffer(bufnr)
+  if newbuf then
+    for _, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
+      for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+        local winbuf = vim.api.nvim_win_get_buf(window)
+        if winbuf == bufnr then
+          vim.api.nvim_win_set_buf(window, newbuf)
+        end
+      end
+    end
+  end
+
+  if vim.api.nvim_buf_is_valid(bufnr) then
+    vim.cmd('silent! bdelete! ' .. bufnr)
+  end
+end
+
+local function delete_buffer_idx(force, bufidx)
+  local bufnr = bufnr_from_idx(bufidx)
+  if bufnr then
+    delete_buffer(force, bufnr)
+  else
+    vim.api.nvim_err_writeln(string.format("Could not find buffer at index %s", bufidx))
+  end
+end
+
 local function close_all_but_current()
   local current = nvim.get_current_buf()
   local buffers = m.buffers
   for i, number in ipairs(buffers) do
     if number ~= current then
-      vim.fn['bufferline#bbye#delete']('bdelete', '', bufname(number))
+      delete_buffer(false, number)
     end
   end
   m.update()
@@ -681,7 +734,7 @@ local function close_all_but_pinned()
   local buffers = m.buffers
   for i, number in ipairs(buffers) do
     if not is_pinned(number) then
-      vim.fn['bufferline#bbye#delete']('bdelete', '', bufname(number))
+      delete_buffer(false, number)
     end
   end
   m.update()
@@ -693,7 +746,7 @@ local function close_buffers_left()
     return
   end
   for i = idx, 1, -1 do
-    vim.fn['bufferline#bbye#delete']('bdelete', '', bufname(m.buffers[i]))
+    delete_buffer(false, m.buffers[i])
   end
   m.update()
 end
@@ -704,7 +757,7 @@ local function close_buffers_right()
     return
   end
   for i = idx, len(m.buffers) do
-    vim.fn['bufferline#bbye#delete']('bdelete', '', bufname(m.buffers[i]))
+    delete_buffer(false, m.buffers[i])
   end
   m.update()
 end
@@ -778,7 +831,7 @@ local function order_by_time()
       return a_score > b_score
     end)
   )
-  vim.fn['bufferline#update']()
+  m.update()
 end
 
 local function order_by_window_number()
@@ -880,7 +933,10 @@ m.close_all_but_pinned = close_all_but_pinned
 m.close_buffers_right = close_buffers_right
 m.close_buffers_left = close_buffers_left
 
+m.delete_buffer = delete_buffer
+m.delete_buffer_idx = delete_buffer_idx
 m.hide_buffer = hide_buffer
+m.hide_buffer_idx = hide_buffer_idx
 m.hide_all_but_current = hide_all_but_current
 
 m.clone_tab = clone_tab

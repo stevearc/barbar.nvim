@@ -91,12 +91,6 @@ Left-click to go, middle-click or close button to close. Don't forget to `set mo
 
 ![pinned](./static/pinned.png)
 
-##### bbye.vim for closing buffers
-
-A modified version of [bbye.vim](https://github.com/moll/vim-bbye) is included in this
-plugin to close buffers without messing with your window layout and more. Available
-as `BufferClose` and `bufferline#bbye#delete(buf)`.
-
 ##### Scrollable tabs, to always show the current buffer
 
 ![scroll](./static/scroll.gif)
@@ -491,4 +485,3 @@ No, barbar has nothing to do with barbarians.
 ## License
 
 barbar.nvim: Distributed under the terms of the JSON license.  
-bbye.vim: Distributed under the terms of the GNU Affero license.  

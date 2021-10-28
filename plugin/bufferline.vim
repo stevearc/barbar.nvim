@@ -48,7 +48,7 @@ function! bufferline#enable()
    augroup END
 
    call bufferline#highlight#setup()
-   call bufferline#update()
+   call bufferline#update(v:true)
 endfunc
 
 function! bufferline#disable()
@@ -77,24 +77,19 @@ command! -nargs=1 -bang BufferMove             call s:move_current_buffer_to(<f-
 command!          -bang BufferPick             call bufferline#pick_buffer()
 command!                BufferPin              lua require'bufferline.state'.toggle_pin()
 
-command!          -bang BufferOrderByBufferNumber   call bufferline#order_by_buffer_number()
-command!          -bang BufferOrderByDirectory call bufferline#order_by_directory()
-command!          -bang BufferOrderByLanguage  call bufferline#order_by_language()
-command!          -bang BufferOrderByTime      call bufferline#order_by_time()
-command!          -bang BufferOrderByWindowNumber    call bufferline#order_by_window_number()
+command!          -bang BufferOrderByBufferNumber  call bufferline#order_by_buffer_number()
+command!          -bang BufferOrderByDirectory     call bufferline#order_by_directory()
+command!          -bang BufferOrderByLanguage      call bufferline#order_by_language()
+command!          -bang BufferOrderByTime          call bufferline#order_by_time()
+command!          -bang BufferOrderByWindowNumber  call bufferline#order_by_window_number()
 
-command! -bang -complete=buffer -nargs=?
-                      \ BufferClose            call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>, <q-mods>)
-command! -bang -complete=buffer -nargs=?
-                      \ BufferDelete           call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>, <q-mods>)
-command! -bang -complete=buffer -nargs=?
-                      \ BufferWipeout          call bufferline#bbye#delete('bwipeout', <q-bang>, <q-args>, <q-mods>)
-
+command! -nargs=? -bang BufferClose                call s:delete_buffer(<q-bang>, <q-args>)
+command! -nargs=? -bang BufferDelete               call s:delete_buffer(<q-bang>, <q-args>)
 command!                BufferCloseAllButCurrent   lua require'bufferline.state'.close_all_but_current()
 command!                BufferCloseAllButPinned    lua require'bufferline.state'.close_all_but_pinned()
 command!                BufferCloseBuffersLeft     lua require'bufferline.state'.close_buffers_left()
 command!                BufferCloseBuffersRight    lua require'bufferline.state'.close_buffers_right()
-command!                BufferHide                 lua require'bufferline.state'.hide_buffer()
+command! -nargs=?       BufferHide                 call s:hide_buffer(<q-args>)
 command!                BufferHideAllButCurrent    lua require'bufferline.state'.hide_all_but_current()
 
 command!                TabClone                   lua require'bufferline.state'.clone_tab()
@@ -248,7 +243,7 @@ function! BufferlineMainClickHandler(minwid, clicks, btn, modifiers) abort
       return
    end
    if a:btn =~ 'm'
-      call bufferline#bbye#delete('bdelete', '', a:minwid)
+      call luaeval("require'bufferline.state'.delete_buffer(false, _A)", a:minwid)
    else
       call luaeval("require'bufferline.state'.open_buffer_in_listed_window(_A)", a:minwid)
    end
@@ -256,11 +251,20 @@ endfunction
 
 " Needs to be global -_-
 function! BufferlineCloseClickHandler(minwid, clicks, btn, modifiers) abort
-   call bufferline#bbye#delete('bdelete', '', a:minwid)
+   call luaeval("require'bufferline.state'.delete_buffer(false, _A)", a:minwid)
 endfunction
 
 
-" Buffer movement
+" Buffer operations
+
+function! s:delete_buffer(bang, ...)
+   let force = empty(a:bang) ? v:false : v:true
+   call luaeval("require'bufferline.state'.delete_buffer_idx(_A[1], _A[2] and tonumber(_A[2]))", [force, a:0 ? a:1 : v:null])
+endfunc
+
+function! s:hide_buffer(...)
+   call luaeval("require'bufferline.state'.hide_buffer_idx(_A and tonumber(_A))", a:0 ? a:1 : v:null)
+endfunc
 
 function! s:move_current_buffer(steps)
    call luaeval("require'bufferline.state'.move_current_buffer(_A)", a:steps)
