@@ -411,7 +411,12 @@ local function render(update_names)
   local current_tabpage = tabpagenr()
   local total_tabpages  = tabpagenr('$')
   if layout.tabpages_width > 0 then
-    result = result .. '%=%#BufferTabpages# ' .. tostring(current_tabpage) .. '/' .. tostring(total_tabpages) .. ' '
+    local tab_section = '%#BufferTabpages# ' .. tostring(current_tabpage) .. '/' .. tostring(total_tabpages) .. ' '
+    if vim.g.bufferline.tabpages == 'left' then
+      result = tab_section .. result
+    else
+      result = result .. '%=' .. tab_section
+    end
   end
 
   result = result .. hl('BufferTabpageFill')

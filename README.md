@@ -214,8 +214,8 @@ let bufferline.animation = v:true
 " Enable/disable auto-hiding the tab bar when there is a single buffer
 let bufferline.auto_hide = v:false
 
-" Enable/disable current/total tabpages indicator (top right corner)
-let bufferline.tabpages = v:true
+" Enable/disable current/total tabpages indicator ('right'/'left'/v:false)
+let bufferline.tabpages = 'right'
 
 " Tabs only show buffers that were opened in that tab
 let bufferline.tab_local_buffers = v:false
@@ -297,8 +297,8 @@ vim.g.bufferline = {
   -- Enable/disable auto-hiding the tab bar when there is a single buffer
   auto_hide = false,
 
-  -- Enable/disable current/total tabpages indicator (top right corner)
-  tabpages = true,
+  -- Enable/disable current/total tabpages indicator ('right'/'left'/false)
+  tabpages = 'right',
 
   -- Tabs only show buffers that were opened in that tab
   tab_local_buffers = false,
