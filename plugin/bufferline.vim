@@ -83,6 +83,7 @@ command!          -bang BufferOrderByLanguage  call bufferline#order_by_language
 command!          -bang BufferOrderByTime      call bufferline#order_by_time()
 command!          -bang BufferOrderByWindowNumber    call bufferline#order_by_window_number()
 
+command!                BufferHide             lua require'bufferline.state'.hide_buffer()
 command! -bang -complete=buffer -nargs=?
                       \ BufferClose            call bufferline#bbye#delete('bdelete', <q-bang>, <q-args>, <q-mods>)
 command! -bang -complete=buffer -nargs=?

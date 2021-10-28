@@ -596,6 +596,56 @@ end
 
 -- Close commands
 
+local function get_fallback_buffer()
+  local buffer = vim.api.nvim_get_current_buf()
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+    local winbuf = vim.api.nvim_win_get_buf(window)
+    if winbuf ~= buffer then
+      return winbuf
+    end
+  end
+
+  local replacement = nil
+  for i, listed_buf in ipairs(m.buffers) do
+    if listed_buf == buffer then
+      if i > 1 then
+        replacement = m.buffers[i-1]
+      elseif i < #m.buffers then
+        replacement = m.buffers[i+1]
+      end
+      break
+    end
+  end
+
+  if not replacement then
+    replacement = m.buffers[1]
+  end
+
+  return replacement or vim.api.nvim_create_buf(true, false)
+end
+
+local function hide_buffer()
+  local curbuf = vim.api.nvim_get_current_buf()
+  local new_buffer = get_fallback_buffer()
+
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
+    local winbuf = vim.api.nvim_win_get_buf(window)
+    if winbuf == curbuf then
+      vim.api.nvim_win_set_buf(window, new_buffer)
+    end
+  end
+
+  for i, buffer in ipairs(m.buffers) do
+    if buffer == curbuf then
+      table.remove(m.buffers, i)
+      break
+    end
+  end
+  m.update()
+end
+
 local function close_all_but_current()
   local current = nvim.get_current_buf()
   local buffers = m.buffers
@@ -809,6 +859,8 @@ m.close_all_but_current = close_all_but_current
 m.close_all_but_pinned = close_all_but_pinned
 m.close_buffers_right = close_buffers_right
 m.close_buffers_left = close_buffers_left
+
+m.hide_buffer = hide_buffer
 
 m.is_pinned = is_pinned
 m.move_current_buffer_to = move_current_buffer_to
