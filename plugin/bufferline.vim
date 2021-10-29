@@ -116,7 +116,7 @@ let s:DEFAULT_OPTIONS = {
 \ 'maximum_length': 30,
 \ 'no_name_title': v:null,
 \ 'semantic_letters': v:true,
-\ 'time_decay_rate': 10,
+\ 'time_decay_rate': 30,
 \ 'tabpages': v:true,
 \}
 
