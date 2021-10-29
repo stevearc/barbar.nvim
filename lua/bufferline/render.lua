@@ -209,8 +209,6 @@ local function render(update_names)
     end
   end
 
-  local click_enabled = has('tablineat') and opts.clickable
-  local has_close = opts.closable
   local has_icons = (opts.icons == true) or (opts.icons == 'both')
   local has_icon_custom_colors = opts.icon_custom_colors
   local has_buffer_number = (opts.icons == 'buffer_numbers')
@@ -292,28 +290,11 @@ local function render(update_names)
       end
     end
 
-    local closePrefix = ''
-    local close = ''
-    if has_close or is_pinned then
-      local closeIcon =
-        is_pinned and
-          opts.icon_pinned or
-        (not is_modified and
-          opts.icon_close_tab or
-          opts.icon_close_tab_modified)
-
-      closePrefix = namePrefix
-      close = closeIcon .. ' '
-
-      if click_enabled then
-        closePrefix =
-            '%' .. buffer_number .. '@BufferlineCloseClickHandler@' .. closePrefix
-      end
-    end
-
-    local clickable = ''
-    if click_enabled then
-      clickable = '%' .. buffer_number .. '@BufferlineMainClickHandler@'
+    local pinPrefix = ''
+    local pin = ''
+    if is_pinned then
+      pinPrefix = namePrefix
+      pin = opts.icon_pinned .. ' '
     end
 
     local padding = string.rep(' ', layout.padding_width)
@@ -325,7 +306,6 @@ local function render(update_names)
         or layout.base_widths[i] + (2 * layout.padding_width),
       position = buffer_data.position or buffer_data.real_position,
       groups = {
-        {clickable,          ''},
         {separatorPrefix,    separator},
         {'',                 padding},
         {bufferIndexPrefix,  bufferIndex},
@@ -334,7 +314,7 @@ local function render(update_names)
         {namePrefix,         name},
         {'',                 padding},
         {'',                 ' '},
-        {closePrefix,        close},
+        {pinPrefix,          pin},
       }
     }
 
@@ -399,10 +379,7 @@ local function render(update_names)
   end
 
   -- Render bufferline string
-  result = result .. groups_to_string(bufferline_groups)
-
-  -- To prevent the expansion of the last click group
-  result = result .. '%0@BufferlineMainClickHandler@' .. hl('BufferTabpageFill')
+  result = result .. groups_to_string(bufferline_groups) .. hl('BufferTabpageFill')
 
   if layout.actual_width + strwidth(opts.icon_separator_inactive) <= layout.buffers_width and len(items) > 0 then
     result = result .. opts.icon_separator_inactive

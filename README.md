@@ -9,9 +9,9 @@
   <b>Tabs, as understood by any other editor.</b>
 </p>
 
-`barbar.nvim` is a tabline plugin with re-orderable, auto-sizing, clickable tabs,
-icons, nice highlighting, sort-by commands and a magic jump-to-buffer mode. Plus
-the tab names are made unique when two filenames match.
+`barbar.nvim` is a tabline plugin with re-orderable, auto-sizing, icons, nice
+highlighting, sort-by commands and a magic jump-to-buffer mode. Plus the tab
+names are made unique when two filenames match.
 
 In jump-to-buffer mode, tabs display a target letter instead of their icon. Jump to
 any buffer by simply typing their target letter. Even better, the target letter
@@ -76,12 +76,6 @@ home row (`asdfjkl;gh`) first, then other rows.
 ![jump](./static/sort.gif)
 
 `:BufferOrderByDirectory`, `:BufferOrderByLanguage`, `:BufferOrderByWindowNumber`, `:BufferOrderByBufferNumber`
-
-##### Clickable & closable tabs
-
-![click](./static/click.gif)
-
-Left-click to go, middle-click or close button to close. Don't forget to `set mouse+=a`.
 
 ##### Unique names when filenames match
 
@@ -214,14 +208,6 @@ let bufferline.tabpages = 'right'
 " Tabs only show buffers that were opened in that tab
 let bufferline.tab_local_buffers = v:false
 
-" Enable/disable close button
-let bufferline.closable = v:true
-
-" Enables/disable clickable tabs
-"  - left-click: go to buffer
-"  - middle-click: delete buffer
-let bufferline.clickable = v:true
-
 " Excludes buffers from the tabline
 let bufferline.exclude_ft = ['javascript']
 let bufferline.exclude_name = ['package.json']
@@ -239,8 +225,6 @@ let bufferline.icon_custom_colors = v:false
 " Configure icons on the bufferline.
 let bufferline.icon_separator_active = '▎'
 let bufferline.icon_separator_inactive = '▎'
-let bufferline.icon_close_tab = ''
-let bufferline.icon_close_tab_modified = '●'
 let bufferline.icon_pinned = '車'
 
 " After this long with no activity, consider the user idle
@@ -297,14 +281,6 @@ vim.g.bufferline = {
   -- Tabs only show buffers that were opened in that tab
   tab_local_buffers = false,
 
-  -- Enable/disable close button
-  closable = true,
-
-  -- Enables/disable clickable tabs
-  --  - left-click: go to buffer
-  --  - middle-click: delete buffer
-  clickable = true,
-
   -- Excludes buffers from the tabline
   exclude_ft = ['javascript'],
   exclude_name = ['package.json'],
@@ -323,8 +299,6 @@ vim.g.bufferline = {
   -- Configure icons on the bufferline.
   icon_separator_active = '▎',
   icon_separator_inactive = '▎',
-  icon_close_tab = '',
-  icon_close_tab_modified = '●',
   icon_pinned = '車',
 
   -- After this long with no activity, consider the user idle

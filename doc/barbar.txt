@@ -193,17 +193,6 @@ Here are the groups that you should define if you'd like to style Barbar.
 
 	The separator for inactive buffers and the `BufferTabpageFill`.
 
-					      *g:bufferline.icon_close_tab*
-`g:bufferline.icon_close_tab`		string (default '')
-
-	The button used to close the tab.
-
-			             *g:bufferline.icon_close_tab_modified*
-`g:bufferline.icon_close_tab_modified`		string (default '●')
-
-	The button used to close the tab when it has been modified since
-	last save.
-
 			                         *g:bufferline.icon_pinned*
 `g:bufferline.icon_pinned`                            string (default '車')
 
@@ -221,11 +210,6 @@ Here are the groups that you should define if you'd like to style Barbar.
 
 	If true, new buffers appear at the end of the list. Default is to
 	open after the current buffer.
-
-						    *g:bufferline.closable*
-`g:bufferline.closable`		boolean	(default v:true)
-
-	Controls if close buttons are shown.
 
 					    *g:bufferline.semantic_letters*
 `g:bufferline.semantic_letters`		boolean	(default v:true)
@@ -245,15 +229,6 @@ Here are the groups that you should define if you'd like to style Barbar.
 >
         let g:bufferline.letters =
 	  \ 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP'
-<
-
-					           *g:bufferline.clickable*
-`g:bufferline.clickable`		boolean	(default v:true)
-
-	If set, you can left-click on a tab to switch to that buffer, and
-	middle-click to delete it.
->
-        let g:bufferline.clickable = v:true
 <
 
 					           *g:bufferline.exclude_ft*

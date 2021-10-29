@@ -101,12 +101,8 @@ command!                TabClone                   lua require'bufferline.state'
 let s:DEFAULT_OPTIONS = {
 \ 'animation': v:true,
 \ 'auto_hide': v:false,
-\ 'clickable': v:true,
-\ 'closable': v:true,
 \ 'exclude_ft': v:null,
 \ 'exclude_name': v:null,
-\ 'icon_close_tab': '',
-\ 'icon_close_tab_modified': '●',
 \ 'icon_pinned': '',
 \ 'icon_separator_active':   '▎',
 \ 'icon_separator_inactive': '▎',
@@ -236,24 +232,6 @@ function! BufferlineOnOptionChanged(d, k, z)
       call luaeval("require'bufferline.jump_mode'.initialize_indexes()")
    end
 endfunc
-
-" Needs to be global -_-
-function! BufferlineMainClickHandler(minwid, clicks, btn, modifiers) abort
-   if a:minwid == 0
-      return
-   end
-   if a:btn =~ 'm'
-      call luaeval("require'bufferline.state'.delete_buffer(false, _A)", a:minwid)
-   else
-      call luaeval("require'bufferline.state'.open_buffer_in_listed_window(_A)", a:minwid)
-   end
-endfunction
-
-" Needs to be global -_-
-function! BufferlineCloseClickHandler(minwid, clicks, btn, modifiers) abort
-   call luaeval("require'bufferline.state'.delete_buffer(false, _A)", a:minwid)
-endfunction
-
 
 " Buffer operations
 
