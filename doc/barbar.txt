@@ -60,9 +60,6 @@ The name of each command should be descriptive enough for you to use it.
    "                          :BufferCloseBuffersLeft<CR>
    "                          :BufferCloseBuffersRight<CR>
 
-   " Magic buffer-picking mode
-   nnoremap <silent> <C-s>    :BufferPick<CR>
-
    " Sort automatically by...
    nnoremap <silent> <Space>bb :BufferOrderByBufferNumber<CR>
    nnoremap <silent> <Space>bd :BufferOrderByDirectory<CR>
@@ -109,7 +106,6 @@ Here are the groups that you should define if you'd like to style Barbar.
    "       *Index: buffer index
    "         *Mod: when modified
    "        *Sign: the separator between buffers
-   "      *Target: letter in buffer-picking mode
    "
    " BufferTabpages: tabpage indicator
    " BufferTabpageFill: filler after the buffer section
@@ -210,26 +206,6 @@ Here are the groups that you should define if you'd like to style Barbar.
 
 	If true, new buffers appear at the end of the list. Default is to
 	open after the current buffer.
-
-					    *g:bufferline.semantic_letters*
-`g:bufferline.semantic_letters`		boolean	(default v:true)
-
-	If set, the letters for each buffer in buffer-pick mode will be
-	assigned based on their name. Otherwise or in case all letters are
-	already assigned, the behavior is to assign letters in order of
-	usability (see order just below)
-
-					             *g:bufferline.letters*
-`g:bufferline.letters`			string	(default
-		     'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP')
-
-	New buffer letters are assigned in this order. This order is
-	optimal for the qwerty keyboard layout but might need adjustement
-	for other layouts.
->
-        let g:bufferline.letters =
-	  \ 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP'
-<
 
 					           *g:bufferline.exclude_ft*
 `g:bufferline.exclude_ft`		string[] (default v:null)

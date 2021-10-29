@@ -9,8 +9,6 @@ set showtabline=2
 function! bufferline#enable()
    augroup bufferline
       au!
-      au BufReadPost    * call <SID>on_buffer_open(expand('<abuf>'))
-      au BufNewFile     * call <SID>on_buffer_open(expand('<abuf>'))
       au BufDelete      * call <SID>on_buffer_close(expand('<abuf>'))
       au VimEnter       * call bufferline#highlight#setup()
       au ColorScheme    * call bufferline#highlight#setup()
@@ -74,7 +72,6 @@ command! -count   -bang BufferMoveNext         call s:move_current_buffer(v:coun
 command! -count   -bang BufferMovePrevious     call s:move_current_buffer(-v:count1)
 command! -nargs=1 -bang BufferMove             call s:move_current_buffer_to(<f-args>)
 
-command!          -bang BufferPick             call bufferline#pick_buffer()
 command!                BufferPin              lua require'bufferline.state'.toggle_pin()
 
 command!          -bang BufferOrderByBufferNumber  call bufferline#order_by_buffer_number()
@@ -172,10 +169,6 @@ function! bufferline#render(update_names) abort
    echohl None
 endfu
 
-function! bufferline#pick_buffer()
-   call luaeval("require'bufferline.jump_mode'.activate()")
-endfunc
-
 function! bufferline#order_by_buffer_number()
    call luaeval("require'bufferline.state'.order_by_buffer_number()")
 endfunc
@@ -209,12 +202,7 @@ endfunc
 " Section: Event handlers
 "========================
 
-function! s:on_buffer_open(abuf)
-   call luaeval("require'bufferline.jump_mode'.assign_next_letter(_A)", a:abuf)
-endfunc
-
 function! s:on_buffer_close(bufnr)
-   call luaeval("require'bufferline.jump_mode'.unassign_letter_for(_A)", a:bufnr)
    call bufferline#update_async() " BufDelete is called before buffer deletion
 endfunc
 
@@ -228,9 +216,6 @@ endfunc
 " Needs to be global -_-
 function! BufferlineOnOptionChanged(d, k, z)
    let g:bufferline = extend(s:DEFAULT_OPTIONS, get(g:, 'bufferline', {}))
-   if a:k == 'letters'
-      call luaeval("require'bufferline.jump_mode'.initialize_indexes()")
-   end
 endfunc
 
 " Buffer operations

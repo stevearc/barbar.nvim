@@ -40,7 +40,6 @@ local function get_tabpage()
 end
 
 local m = setmetatable({
-  is_picking_buffer = false,
   scroll = 0,
   scroll_current = 0,
   buffers_by_tab = {},

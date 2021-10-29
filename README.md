@@ -10,13 +10,8 @@
 </p>
 
 `barbar.nvim` is a tabline plugin with re-orderable, auto-sizing, icons, nice
-highlighting, sort-by commands and a magic jump-to-buffer mode. Plus the tab
-names are made unique when two filenames match.
-
-In jump-to-buffer mode, tabs display a target letter instead of their icon. Jump to
-any buffer by simply typing their target letter. Even better, the target letter
-stays constant for the lifetime of the buffer, so if you're working with a set of
-files you can even type the letter ahead from memory.
+highlighting, and sort-by commands. Plus the tab names are made unique when two
+filenames match.
 
 ##### Table of content
  - [Install](#install)
@@ -62,18 +57,9 @@ install [nerd fonts](https://www.nerdfonts.com/).
 
 ![resize](./static/resize.gif)
 
-##### Jump-to-buffer mode
-
-![jump](./static/jump.gif)
-
-Type a letter to jump to a buffer. Letters stay constant for the lifetime of the buffer.
-By default, letters are assigned based on buffer name, eg `README.md` will get letter `r`.
-You can change this so that letters are assigned based on usability:
-home row (`asdfjkl;gh`) first, then other rows.
-
 ##### Sort tabs automatically
 
-![jump](./static/sort.gif)
+![sort](./static/sort.gif)
 
 `:BufferOrderByDirectory`, `:BufferOrderByLanguage`, `:BufferOrderByWindowNumber`, `:BufferOrderByBufferNumber`
 
@@ -127,8 +113,6 @@ nnoremap <silent>    <A-c> :BufferClose<CR>
 "                          :BufferCloseAllButPinned<CR>
 "                          :BufferCloseBuffersLeft<CR>
 "                          :BufferCloseBuffersRight<CR>
-" Magic buffer-picking mode
-nnoremap <silent> <C-s>    :BufferPick<CR>
 " Sort automatically by...
 nnoremap <silent> <Space>bb :BufferOrderByBufferNumber<CR>
 nnoremap <silent> <Space>bd :BufferOrderByDirectory<CR>
@@ -172,8 +156,6 @@ map('n', '<A-c>', ':BufferClose<CR>', opts)
 --                 :BufferCloseAllButCurrent<CR>
 --                 :BufferCloseBuffersLeft<CR>
 --                 :BufferCloseBuffersRight<CR>
--- Magic buffer-picking mode
-map('n', '<C-p>', ':BufferPick<CR>', opts)
 -- Sort automatically by...
 map('n', '<Space>bb', ':BufferOrderByBufferNumber<CR>', opts)
 map('n', '<Space>bd', ':BufferOrderByDirectory<CR>', opts)
@@ -242,21 +224,9 @@ let bufferline.maximum_padding = 4
 " Sets the maximum buffer name length.
 let bufferline.maximum_length = 30
 
-" If set, the letters for each buffer in buffer-pick mode will be
-" assigned based on their name. Otherwise or in case all letters are
-" already assigned, the behavior is to assign letters in order of
-" usability (see order below)
-let bufferline.semantic_letters = v:true
-
 " How fast the "time" score for a buffer decays (used for BufferOrderByTime)
 " This number is how long it takes for the buffer to lose half its score.
 let bufferline.time_decay_rate = 10
-
-" New buffer letters are assigned in this order. This order is
-" optimal for the qwerty keyboard layout but might need adjustement
-" for other layouts.
-let bufferline.letters =
-  \ 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP'
 
 " Sets the name of unnamed buffers. By default format is "[Buffer X]"
 " where X is the buffer number. But only a static string is accepted here.
@@ -316,20 +286,9 @@ vim.g.bufferline = {
   -- Sets the maximum buffer name length.
   maximum_length = 30,
 
-  -- If set, the letters for each buffer in buffer-pick mode will be
-  -- assigned based on their name. Otherwise or in case all letters are
-  -- already assigned, the behavior is to assign letters in order of
-  -- usability (see order below)
-  semantic_letters = true,
-
   -- How fast the "time" score for a buffer decays (used for BufferOrderByTime)
   -- This number is how long it takes for the buffer to lose half its score.
   time_decay_rate = 10,
-
-  -- New buffer letters are assigned in this order. This order is
-  -- optimal for the qwerty keyboard layout but might need adjustement
-  -- for other layouts.
-  letters = 'asdfjkl;ghnmxcvbziowerutyqpASDFJKLGHNMXCVBZIOWERUTYQP',
 
   -- Sets the name of unnamed buffers. By default format is "[Buffer X]"
   -- where X is the buffer number. But only a static string is accepted here.

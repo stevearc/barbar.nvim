@@ -11,13 +11,11 @@ local icons = require("bufferline.icons")
 local state = require("bufferline.state")
 local Buffer = require("bufferline.buffer")
 local Layout = require("bufferline.layout")
-local JumpMode = require("bufferline.jump_mode")
 local get_icon = icons.get_icon
 local len = utils.len
 local slice = utils.slice
 local strwidth = nvim.strwidth
 local reverse = utils.reverse
-local has = vim.fn.has
 local bufnr = vim.fn.bufnr
 local strcharpart = vim.fn.strcharpart
 local getbufvar = vim.fn.getbufvar
@@ -251,10 +249,6 @@ local function render(update_names)
     local bufferIndexPrefix = ""
     local bufferIndex = ""
 
-    -- The jump letter
-    local jumpLetterPrefix = ""
-    local jumpLetter = ""
-
     -- The devicon
     local iconPrefix = ""
     local icon = ""
@@ -266,29 +260,17 @@ local function render(update_names)
       bufferIndex = number_text .. " "
     end
 
-    if state.is_picking_buffer then
-      local letter = JumpMode.get_letter(buffer_number)
-
-      -- Replace first character of buf name with jump letter
-      if letter and not has_icons then
-        name = slice(name, 2)
-      end
-
-      jumpLetterPrefix = hl("Buffer" .. status .. "Target")
-      jumpLetter = (letter or "") .. (has_icons and (" " .. (letter and "" or " ")) or "")
-    else
-      if has_icons then
-        local iconChar, iconHl = get_icon(
-          buffer_name,
-          getbufvar(buffer_number, "&filetype"),
-          status
-        )
-        local hlName = is_inactive and "BufferInactive" or iconHl
-        iconPrefix = has_icon_custom_colors and hl("Buffer" .. status .. "Icon")
-          or hlName and hl(hlName)
-          or namePrefix
-        icon = iconChar .. " "
-      end
+    if has_icons then
+      local iconChar, iconHl = get_icon(
+        buffer_name,
+        getbufvar(buffer_number, "&filetype"),
+        status
+      )
+      local hlName = is_inactive and "BufferInactive" or iconHl
+      iconPrefix = has_icon_custom_colors and hl("Buffer" .. status .. "Icon")
+        or hlName and hl(hlName)
+        or namePrefix
+      icon = iconChar .. " "
     end
 
     local pinPrefix = ""
@@ -310,7 +292,6 @@ local function render(update_names)
         { "", padding },
         { bufferIndexPrefix, bufferIndex },
         { iconPrefix, icon },
-        { jumpLetterPrefix, jumpLetter },
         { namePrefix, name },
         { "", padding },
         { "", " " },
@@ -320,7 +301,6 @@ local function render(update_names)
 
     if is_current then
       current_buffer_index = i
-      current_buffer_position = buffer_data.real_position
 
       local start = current_position
       local end_ = current_position + item.width
