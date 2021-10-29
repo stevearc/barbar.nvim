@@ -67,7 +67,7 @@ end
 
 local function collect(iterator)
   local result = {}
-  for it, v in iterator do
+  for _, v in iterator do
     table.insert(result, v)
   end
   return result

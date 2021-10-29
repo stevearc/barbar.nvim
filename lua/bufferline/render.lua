@@ -45,17 +45,6 @@ local function groups_to_string(groups)
   return result
 end
 
-local function groups_to_raw_string(groups)
-  local result = ""
-
-  for _, group in ipairs(groups) do
-    local text = group[2]
-    result = result .. text
-  end
-
-  return result
-end
-
 local function groups_insert(groups, position, others)
   local current_position = 0
 
@@ -130,7 +119,7 @@ local function slice_groups_right(groups, width)
 
   local new_groups = {}
 
-  for i, group in ipairs(groups) do
+  for _, group in ipairs(groups) do
     local hl = group[1]
     local text = group[2]
     local text_width = strwidth(text)
@@ -155,7 +144,7 @@ local function slice_groups_left(groups, width)
 
   local new_groups = {}
 
-  for i, group in ipairs(reverse(groups)) do
+  for _, group in ipairs(reverse(groups)) do
     local hl = group[1]
     local text = group[2]
     local text_width = strwidth(text)
@@ -230,10 +219,8 @@ local function render(update_names)
 
     local activity = Buffer.get_activity(buffer_number)
     local is_inactive = activity == 0
-    local is_visible = activity == 1
     local is_current = activity == 2
     local is_modified = nvim.buf_get_option(buffer_number, "modified")
-    local is_closing = buffer_data.closing
     local is_pinned = state.is_pinned(buffer_number)
 
     local status = HL_BY_ACTIVITY[activity]
@@ -392,8 +379,6 @@ local function render_safe(update_names)
   local ok, result = xpcall(render, debug.traceback, update_names)
   return { ok, tostring(result) }
 end
-
--- print(render(state.buffers))
 
 local exports = {
   render = render,

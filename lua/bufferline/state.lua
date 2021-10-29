@@ -3,7 +3,6 @@
 --
 
 local vim = vim
-local api = vim.api
 local nvim = require("bufferline.nvim")
 local utils = require("bufferline.utils")
 local timing = require("bufferline.timing")
@@ -11,9 +10,7 @@ local Buffer = require("bufferline.buffer")
 local Layout = require("bufferline.layout")
 local animate = require("bufferline.animate")
 local len = utils.len
-local is_nil = utils.is_nil
 local index_of = utils.index_of
-local reverse = utils.reverse
 local filter = vim.tbl_filter
 local includes = vim.tbl_contains
 local bufname = vim.fn.bufname
@@ -251,7 +248,7 @@ local function open_buffers(new_buffers)
 
   local layout = Layout.calculate(m)
 
-  for i, buffer_number in ipairs(new_buffers) do
+  for _, buffer_number in ipairs(new_buffers) do
     open_buffer_start_animation(layout, buffer_number)
   end
 end
@@ -399,7 +396,7 @@ function m.get_updated_buffers(update_names)
     return not includes(current_buffers, b)
   end, m.buffers)
 
-  for i, buffer_number in ipairs(closed_buffers) do
+  for _, buffer_number in ipairs(closed_buffers) do
     local buffer_data = m.get_buffer_data(buffer_number)
     if not buffer_data.closing then
       did_change = true
@@ -448,7 +445,7 @@ local move_animation_data = nil
 local function move_buffer_animated_tick(ratio, current_animation)
   local data = move_animation_data
 
-  for i, current_number in ipairs(m.buffers) do
+  for _, current_number in ipairs(m.buffers) do
     local current_data = m.get_buffer_data(current_number)
 
     if current_animation.running == true then
@@ -737,7 +734,7 @@ end
 local function close_all_but_current()
   local current = nvim.get_current_buf()
   local buffers = m.buffers
-  for i, number in ipairs(buffers) do
+  for _, number in ipairs(buffers) do
     if number ~= current then
       delete_buffer(false, number)
     end
@@ -747,7 +744,7 @@ end
 
 local function close_all_but_pinned()
   local buffers = m.buffers
-  for i, number in ipairs(buffers) do
+  for _, number in ipairs(buffers) do
     if not is_pinned(number) then
       delete_buffer(false, number)
     end

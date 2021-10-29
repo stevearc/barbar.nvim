@@ -16,7 +16,7 @@ local hl_groups = {}
 -- changes, therefore we need to re-define colors for all groups we have
 -- already highlighted.
 local function set_highlights()
-  for i, hl_group in ipairs(hl_groups) do
+  for _, hl_group in ipairs(hl_groups) do
     local icon_hl = hl_group[1]
     local buffer_status = hl_group[2]
     nvim.command(
