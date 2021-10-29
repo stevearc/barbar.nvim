@@ -3,7 +3,7 @@
 --
 
 local vim = vim
-local nvim = require'bufferline.nvim'
+local nvim = require("bufferline.nvim")
 local fnamemodify = vim.fn.fnamemodify
 local strcharpart = vim.fn.strcharpart
 
@@ -29,7 +29,7 @@ local function has(tbl, n)
 end
 
 local function slice(tbl, first, last)
-  if type(tbl) == 'string' then
+  if type(tbl) == "string" then
     if last == nil then
       local start = first - 1
       return strcharpart(tbl, start)
@@ -51,7 +51,7 @@ local function slice(tbl, first, last)
   local sliced = {}
 
   for i = first or 1, last or #tbl do
-    sliced[#sliced+1] = tbl[i]
+    sliced[#sliced + 1] = tbl[i]
   end
 
   return sliced
@@ -74,21 +74,21 @@ local function collect(iterator)
 end
 
 local function basename(path)
-   return fnamemodify(path, ':t')
+  return fnamemodify(path, ":t")
 end
 
 local function is_displayed(opts, buffer)
-  local exclude_ft   = opts.exclude_ft
+  local exclude_ft = opts.exclude_ft
   local exclude_name = opts.exclude_name
 
   if not nvim.buf_is_valid(buffer) then
     return false
-  elseif not nvim.buf_get_option(buffer, 'buflisted') then
+  elseif not nvim.buf_get_option(buffer, "buflisted") then
     return false
   end
 
   if not is_nil(exclude_ft) then
-    local ft = nvim.buf_get_option(buffer, 'filetype')
+    local ft = nvim.buf_get_option(buffer, "filetype")
     if has(exclude_ft, ft) then
       return false
     end

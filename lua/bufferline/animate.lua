@@ -6,8 +6,6 @@ local float2nr = vim.fn.float2nr
 local reltime = vim.fn.reltime
 local reltimefloat = vim.fn.reltimefloat
 
-
-
 local animation_frequency = 50
 
 function start(duration, initial, final, type, callback)
@@ -25,9 +23,13 @@ function start(duration, initial, final, type, callback)
   state.start = reltime()
   state.timer = vim.loop.new_timer()
 
-  state.timer:start(0, animation_frequency, vim.schedule_wrap(function()
-    animate_tick(state.timer, state)
-  end))
+  state.timer:start(
+    0,
+    animation_frequency,
+    vim.schedule_wrap(function()
+      animate_tick(state.timer, state)
+    end)
+  )
 
   state.fn(state.current, state)
   return state
@@ -54,7 +56,7 @@ function animate_tick(timer, state)
     local current = lerp(ratio, state.initial, state.final, state.type)
     state.fn(current, state)
   else
-  -- Went overtime, stop the animation!
+    -- Went overtime, stop the animation!
     state.running = false
     state.fn(state.final, state)
     timer:stop()
@@ -66,18 +68,14 @@ function stop(state)
 end
 
 function lerp(ratio, initial, final, ...)
-  local arg = {...}
+  local arg = { ... }
   local type = (#arg > 0) and arg[1] or vim.v.t_number
 
   local range = final - initial
-  local delta =
-    (type == vim.v.t_number) and
-      float2nr(ratio * range) or
-              (ratio * range)
+  local delta = (type == vim.v.t_number) and float2nr(ratio * range) or (ratio * range)
 
   return initial + delta
 end
-
 
 return {
   start = start,

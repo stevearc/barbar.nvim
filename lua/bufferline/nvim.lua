@@ -12,7 +12,7 @@ setmetatable(nvim, {
     local fn = api["nvim_" .. k]
     nvim[k] = fn
     return fn
-  end
+  end,
 })
 
 return nvim

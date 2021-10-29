@@ -1,10 +1,10 @@
-local nvim = require'bufferline.nvim'
-local clock = require'bufferline.userclock'
-local utils = require'bufferline.utils'
+local nvim = require("bufferline.nvim")
+local clock = require("bufferline.userclock")
+local utils = require("bufferline.utils")
 local active_buffer = -1
-local LAST_DECAY_TIME = 'bufferline_last_decay_time'
-local TIME_SCORE = 'bufferline_time_score'
-local TIME_ACTIVATED = 'bufferline_time_activated'
+local LAST_DECAY_TIME = "bufferline_last_decay_time"
+local TIME_SCORE = "bufferline_time_score"
+local TIME_ACTIVATED = "bufferline_time_activated"
 
 local function get_last_decay_time(bufnr, now)
   local ok, val = pcall(nvim.buf_get_var, bufnr, LAST_DECAY_TIME)
@@ -20,7 +20,7 @@ local function get_stored_score(bufnr)
   local ok, val = pcall(nvim.buf_get_var, bufnr, TIME_SCORE)
   if ok then
     -- Floats get serialized as a table. See :help lua-special-tbl
-    if type(val) == 'table' then
+    if type(val) == "table" then
       return val[vim.val_idx]
     else
       return val

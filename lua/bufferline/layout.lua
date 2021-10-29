@@ -3,18 +3,17 @@
 --
 
 local vim = vim
-local nvim = require'bufferline.nvim'
-local utils = require'bufferline.utils'
-local Buffer = require'bufferline.buffer'
+local nvim = require("bufferline.nvim")
+local utils = require("bufferline.utils")
+local Buffer = require("bufferline.buffer")
 local len = utils.len
 local strwidth = nvim.strwidth
-
 
 local SIDES_OF_BUFFER = 2
 
 local function calculate_tabpages_width()
   local current = vim.fn.tabpagenr()
-  local total   = vim.fn.tabpagenr('$')
+  local total = vim.fn.tabpagenr("$")
   if not vim.g.bufferline.tabpages or total == 1 then
     return 0
   end
@@ -23,23 +22,25 @@ end
 
 local function calculate_buffers_width(state, base_width)
   local opts = vim.g.bufferline
-  local has_numbers = opts.icons == 'both' or opts.icons == 'numbers'
+  local has_numbers = opts.icons == "both" or opts.icons == "numbers"
 
   local sum = 0
   local widths = {}
 
   for i, buffer_number in ipairs(state.buffers) do
     local buffer_data = state.get_buffer_data(buffer_number)
-    local buffer_name = buffer_data.name or '[no name]'
+    local buffer_name = buffer_data.name or "[no name]"
 
     local width
     if buffer_data.closing then
       width = buffer_data.real_width
     else
       width = base_width
-        + strwidth(Buffer.get_activity(buffer_number) > 0 -- separator
-            and opts.icon_separator_active
-            or opts.icon_separator_inactive)
+        + strwidth(
+          Buffer.get_activity(buffer_number) > 0 -- separator
+              and opts.icon_separator_active
+            or opts.icon_separator_inactive
+        )
         + strwidth(buffer_name) -- name
 
       if has_numbers then
@@ -52,9 +53,7 @@ local function calculate_buffers_width(state, base_width)
 
       if is_pinned then
         local icon = opts.icon_pinned
-        width = width
-          + strwidth(icon)
-          + 1 -- space-after-pinned-icon
+        width = width + strwidth(icon) + 1 -- space-after-pinned-icon
       end
     end
     sum = sum + width
@@ -80,11 +79,10 @@ end
 local function calculate(state)
   local opts = vim.g.bufferline
 
-  local has_icons = (opts.icons == true) or (opts.icons == 'both')
+  local has_icons = (opts.icons == true) or (opts.icons == "both")
 
   -- [icon + space-after-icon] + space-after-name
-  local base_width =
-    (has_icons and (1 + 1) or 0) -- icon + space-after-icon
+  local base_width = (has_icons and (1 + 1) or 0) -- icon + space-after-icon
     + 1 -- space-after-name
 
   local available_width = vim.o.columns
@@ -97,12 +95,12 @@ local function calculate(state)
 
   local buffers_width = available_width - tabpages_width
 
-  local buffers_length               = len(state.buffers)
-  local remaining_width              = math.max(buffers_width - used_width, 0)
-  local remaining_width_per_buffer   = math.floor(remaining_width / buffers_length)
+  local buffers_length = len(state.buffers)
+  local remaining_width = math.max(buffers_width - used_width, 0)
+  local remaining_width_per_buffer = math.floor(remaining_width / buffers_length)
   local remaining_padding_per_buffer = math.floor(remaining_width_per_buffer / SIDES_OF_BUFFER)
-  local padding_width                = math.min(remaining_padding_per_buffer, opts.maximum_padding)
-  local actual_width                 = used_width + (buffers_length * padding_width * SIDES_OF_BUFFER)
+  local padding_width = math.min(remaining_padding_per_buffer, opts.maximum_padding)
+  local actual_width = used_width + (buffers_length * padding_width * SIDES_OF_BUFFER)
 
   return {
     actual_width = actual_width,

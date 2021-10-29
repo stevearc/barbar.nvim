@@ -4,13 +4,13 @@
 
 local vim = vim
 local api = vim.api
-local nvim = require'bufferline.nvim'
-local utils = require'bufferline.utils'
+local nvim = require("bufferline.nvim")
+local utils = require("bufferline.utils")
 local len = utils.len
 local slice = utils.slice
 local strwidth = nvim.strwidth
-local state = require'bufferline.state'
-local Buffer = require'bufferline.buffer'
+local state = require("bufferline.state")
+local Buffer = require("bufferline.buffer")
 local fnamemodify = vim.fn.fnamemodify
 local bufname = vim.fn.bufname
 
@@ -53,7 +53,7 @@ local function assign_next_letter(bufnr)
 
   -- First, try to assign a letter based on name
   if vim.g.bufferline.semantic_letters == true then
-    local name = vim.fn.fnamemodify(vim.fn.bufname(bufnr), ':t:r')
+    local name = vim.fn.fnamemodify(vim.fn.bufname(bufnr), ":t:r")
 
     for i = 1, strwidth(name) do
       local letter = string.lower(slice(name, i, i))
@@ -87,7 +87,7 @@ local function assign_next_letter(bufnr)
 end
 
 local function unassign_letter(letter)
-  if letter == '' or letter == nil then
+  if letter == "" or letter == nil then
     return
   end
 
@@ -103,21 +103,20 @@ local function unassign_letter(letter)
 end
 
 local function get_letter(bufnr)
-   if m.letter_by_buffer[bufnr] ~= nil then
-      return m.letter_by_buffer[bufnr]
-   end
-   return assign_next_letter(bufnr)
+  if m.letter_by_buffer[bufnr] ~= nil then
+    return m.letter_by_buffer[bufnr]
+  end
+  return assign_next_letter(bufnr)
 end
 
 local function unassign_letter_for(bufnr)
   unassign_letter(get_letter(bufnr))
 end
 
-
 local function activate()
   state.is_picking_buffer = true
   state.update()
-  nvim.command('redraw')
+  nvim.command("redraw")
   state.is_picking_buffer = false
 
   local char = vim.fn.getchar()
@@ -125,20 +124,20 @@ local function activate()
 
   local did_switch = false
 
-  if letter ~= '' then
+  if letter ~= "" then
     if m.buffer_by_letter[letter] ~= nil then
       local bufnr = m.buffer_by_letter[letter]
-      nvim.command('buffer' .. bufnr)
+      nvim.command("buffer" .. bufnr)
       did_switch = true
     else
-      nvim.command('echohl WarningMsg')
+      nvim.command("echohl WarningMsg")
       nvim.command([[echom "Couldn't find buffer"]])
-      nvim.command('echohl None')
+      nvim.command("echohl None")
     end
   end
 
   state.update()
-  nvim.command('redraw')
+  nvim.command("redraw")
 end
 
 m.activate = activate
