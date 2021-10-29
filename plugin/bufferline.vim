@@ -103,7 +103,7 @@ let s:DEFAULT_OPTIONS = {
 \ 'auto_hide': v:false,
 \ 'exclude_ft': v:null,
 \ 'exclude_name': v:null,
-\ 'icon_pinned': '',
+\ 'icon_pinned': '車',
 \ 'icon_separator_active':   '▎',
 \ 'icon_separator_inactive': '▎',
 \ 'icons': v:true,
