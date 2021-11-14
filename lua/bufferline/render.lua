@@ -357,7 +357,9 @@ local function render(update_names)
   if layout.tabpages_width > 0 then
     local tab_section = "%#BufferTabpages#" .. layout.tabpages_display
     if vim.g.bufferline.tabpages == "left" then
-      result = tab_section .. result
+      -- I have no idea why, but the %= on the end is required. Without it, we get
+      -- hard crashes from neovim while doing a realloc for the tabline string.
+      result = tab_section .. result .. '%='
     else
       result = result .. "%=" .. tab_section
     end
