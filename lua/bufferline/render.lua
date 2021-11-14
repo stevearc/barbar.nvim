@@ -19,7 +19,6 @@ local reverse = utils.reverse
 local bufnr = vim.fn.bufnr
 local strcharpart = vim.fn.strcharpart
 local getbufvar = vim.fn.getbufvar
-local tabpagenr = vim.fn.tabpagenr
 
 local HL_BY_ACTIVITY = {
   [0] = "Inactive",
@@ -355,14 +354,8 @@ local function render(update_names)
     result = result .. opts.icon_separator_inactive
   end
 
-  local current_tabpage = tabpagenr()
-  local total_tabpages = tabpagenr("$")
   if layout.tabpages_width > 0 then
-    local tab_section = "%#BufferTabpages# "
-      .. tostring(current_tabpage)
-      .. "/"
-      .. tostring(total_tabpages)
-      .. " "
+    local tab_section = "%#BufferTabpages#" .. layout.tabpages_display
     if vim.g.bufferline.tabpages == "left" then
       result = tab_section .. result
     else

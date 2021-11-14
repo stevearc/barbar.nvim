@@ -11,13 +11,17 @@ local strwidth = nvim.strwidth
 
 local SIDES_OF_BUFFER = 2
 
-local function calculate_tabpages_width()
-  local current = vim.fn.tabpagenr()
-  local total = vim.fn.tabpagenr("$")
-  if not vim.g.bufferline.tabpages or total == 1 then
-    return 0
+local function get_tabpage_display()
+  local total_tabpages = vim.fn.tabpagenr("$")
+  if total_tabpages == 1 then
+    return ""
   end
-  return 1 + strwidth(tostring(current)) + 1 + strwidth(tostring(total)) + 1
+  local current_tabpage = vim.fn.tabpagenr()
+  return " "
+    .. tostring(current_tabpage)
+    .. "/"
+    .. tostring(total_tabpages)
+    .. " "
 end
 
 local function calculate_buffers_width(state, base_width)
@@ -91,7 +95,8 @@ local function calculate(state)
   end
 
   local used_width, base_widths = calculate_buffers_width(state, base_width)
-  local tabpages_width = calculate_tabpages_width()
+  local tabpages_display = get_tabpage_display()
+  local tabpages_width = strwidth(tabpages_display)
 
   local buffers_width = available_width - tabpages_width
 
@@ -110,6 +115,7 @@ local function calculate(state)
     buffers_width = buffers_width,
     padding_width = padding_width,
     tabpages_width = tabpages_width,
+    tabpages_display = tabpages_display,
     used_width = used_width,
   }
 end
