@@ -616,9 +616,10 @@ end
 
 local function get_fallback_buffer(bufnr)
   local tabpage = vim.api.nvim_get_current_tabpage()
+  local opts = vim.g.bufferline
   for _, window in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
     local winbuf = vim.api.nvim_win_get_buf(window)
-    if winbuf ~= bufnr then
+    if winbuf ~= bufnr and utils.is_displayed(opts, winbuf) then
       return winbuf
     end
   end
