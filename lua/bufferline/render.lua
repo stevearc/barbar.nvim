@@ -247,11 +247,7 @@ local function render(update_names)
     end
 
     if has_icons then
-      local iconChar, iconHl = get_icon(
-        buffer_name,
-        getbufvar(buffer_number, "&filetype"),
-        status
-      )
+      local iconChar, iconHl = get_icon(buffer_name, getbufvar(buffer_number, "&filetype"), status)
       local hlName = is_inactive and "BufferInactive" or iconHl
       iconPrefix = has_icon_custom_colors and hl("Buffer" .. status .. "Icon")
         or hlName and hl(hlName)
@@ -270,8 +266,8 @@ local function render(update_names)
 
     local item = {
       is_current = is_current,
-      width = buffer_data.width      -- <padding> <base_widths[i]> <padding>
- or layout.base_widths[i] + (2 * layout.padding_width),
+      width = buffer_data.width -- <padding> <base_widths[i]> <padding>
+        or layout.base_widths[i] + (2 * layout.padding_width),
       position = buffer_data.position or buffer_data.real_position,
       groups = {
         { separatorPrefix, separator },
@@ -355,13 +351,13 @@ local function render(update_names)
   end
 
   if layout.tabpages_width > 0 then
-    local tab_section = "%#BufferTabpages#" .. layout.tabpages_display
-    if vim.g.bufferline.tabpages == "left" then
+    local tab = layout.tabpages_display
+    if opts.tabpages == "left" then
       -- I have no idea why, but the %= on the end is required. Without it, we get
       -- hard crashes from neovim while doing a realloc for the tabline string.
-      result = tab_section .. result .. '%='
+      result = hl("BufferTabpage") .. tab .. hl('BufferTabpages') .. " " .. result .. "%="
     else
-      result = result .. "%=" .. tab_section
+      result = result .. "%=" .. hl("BufferTabpages") .. " " .. hl('BufferTabpage') .. tab
     end
   end
 

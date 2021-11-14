@@ -11,17 +11,60 @@ local strwidth = nvim.strwidth
 
 local SIDES_OF_BUFFER = 2
 
+local function get_tab_dir(tabnr)
+  local dir = vim.fn.getcwd(0, tabnr)
+  local home = os.getenv('HOME')
+  local idx, chars = string.find(dir, home)
+  if idx == 1 then
+    dir = '~' .. string.sub(dir, idx + chars)
+  end
+  return dir
+end
+
+local function get_tabpage_names()
+  local tabnr_to_dir = {}
+  local dir_to_name = {}
+  local name_to_dir = {}
+  local total_tabpages = vim.fn.tabpagenr("$")
+  for i=1,total_tabpages do
+    local dir = get_tab_dir(i)
+    tabnr_to_dir[i] = dir
+    local name = utils.basename(dir)
+    if dir_to_name[dir] == nil then
+      dir_to_name[dir] = name
+    end
+    if name_to_dir[name] == nil or name_to_dir[name] == dir then
+      name_to_dir[name] = dir
+    else
+      local other_dir = name_to_dir[name]
+      local new_name, new_other_name = Buffer.get_unique_name(dir, other_dir)
+      dir_to_name[dir] = new_name
+      dir_to_name[other_dir] = new_other_name
+      name_to_dir[name] = nil
+      name_to_dir[new_name] = dir
+      name_to_dir[new_other_name] = other_dir
+    end
+  end
+  local tabnr_to_name = {}
+  for tabnr, dir in pairs(tabnr_to_dir) do
+    tabnr_to_name[tabnr] = dir_to_name[dir]
+  end
+  local num_distinct_names = #vim.tbl_keys(name_to_dir)
+  return tabnr_to_name, num_distinct_names
+end
+
 local function get_tabpage_display()
   local total_tabpages = vim.fn.tabpagenr("$")
   if total_tabpages == 1 then
     return ""
   end
   local current_tabpage = vim.fn.tabpagenr()
-  return " "
-    .. tostring(current_tabpage)
-    .. "/"
-    .. tostring(total_tabpages)
-    .. " "
+  local tab_names, num_unique = get_tabpage_names()
+  local count = string.format("%d/%d", current_tabpage, total_tabpages)
+  if num_unique > 1 then
+    count = tab_names[current_tabpage] .. ' ' .. count
+  end
+  return count
 end
 
 local function calculate_buffers_width(state, base_width)
@@ -96,7 +139,7 @@ local function calculate(state)
 
   local used_width, base_widths = calculate_buffers_width(state, base_width)
   local tabpages_display = get_tabpage_display()
-  local tabpages_width = strwidth(tabpages_display)
+  local tabpages_width = strwidth(tabpages_display) + 1
 
   local buffers_width = available_width - tabpages_width
 

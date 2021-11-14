@@ -36,6 +36,7 @@ function! bufferline#enable()
       au WinLeave               * call bufferline#update()
       au WinClosed              * call bufferline#update_async()
       au TermOpen               * call bufferline#update_async(v:true, 500)
+      au DirChanged             * call bufferline#update()
    augroup END
 
    augroup bufferline_time
