@@ -8,7 +8,6 @@ local utils = require("bufferline.utils")
 local timing = require("bufferline.timing")
 local Buffer = require("bufferline.buffer")
 local Layout = require("bufferline.layout")
-local animate = require("bufferline.animate")
 local len = utils.len
 local index_of = utils.index_of
 local filter = vim.tbl_filter
@@ -18,12 +17,6 @@ local bufwinnr = vim.fn.bufwinnr
 local fnamemodify = vim.fn.fnamemodify
 
 local PIN = "bufferline_pin"
-
-local ANIMATION_OPEN_DURATION = 150
-local ANIMATION_OPEN_DELAY = 50
-local ANIMATION_CLOSE_DURATION = 150
-local ANIMATION_SCROLL_DURATION = 200
-local ANIMATION_MOVE_DURATION = 150
 
 --------------------------------
 -- Section: Application state --
@@ -38,7 +31,6 @@ end
 
 local m = setmetatable({
   scroll = 0,
-  scroll_current = 0,
   buffers_by_tab = {},
   buffers_by_id = {},
   offset = 0,
@@ -93,8 +85,8 @@ function m.get_buffer_data(id)
   return m.buffers_by_id[id]
 end
 
-function m.update()
-  vim.fn["bufferline#update"]()
+function m.rerender()
+  vim.fn["bufferline#rerender"]()
 end
 
 -- Pinned buffers
@@ -126,72 +118,14 @@ end
 
 -- Scrolling
 
-local scroll_animation = nil
-
-local function set_scroll_tick(new_scroll, animation)
-  m.scroll_current = new_scroll
-  if animation.running == false then
-    scroll_animation = nil
-  end
-  m.update()
-end
-
 local function set_scroll(target)
   m.scroll = target
-
-  if scroll_animation ~= nil then
-    animate.stop(scroll_animation)
-  end
-
-  scroll_animation = animate.start(
-    ANIMATION_SCROLL_DURATION,
-    m.scroll_current,
-    target,
-    vim.v.t_number,
-    set_scroll_tick
-  )
 end
 
 -- Open buffers
 
-local function open_buffer_animated_tick(buffer_number, new_width, animation)
-  local buffer_data = m.get_buffer_data(buffer_number)
-  if animation.running then
-    buffer_data.width = new_width
-  else
-    buffer_data.width = nil
-  end
-  m.update()
-end
-
-local function open_buffer_start_animation(layout, buffer_number)
-  local buffer_data = m.get_buffer_data(buffer_number)
-  buffer_data.real_width = Layout.calculate_width(
-    buffer_data.name,
-    layout.base_width,
-    layout.padding_width
-  )
-
-  local target_width = buffer_data.real_width
-
-  buffer_data.width = 1
-
-  vim.fn.timer_start(ANIMATION_OPEN_DELAY, function()
-    animate.start(
-      ANIMATION_OPEN_DURATION,
-      1,
-      target_width,
-      vim.v.t_number,
-      function(new_width, animation)
-        open_buffer_animated_tick(buffer_number, new_width, animation)
-      end
-    )
-  end)
-end
-
 local function open_buffers(new_buffers)
   local opts = vim.g.bufferline
-  local initial_buffers = len(m.buffers)
 
   -- Open next to the currently opened tab
   -- Find the new index where the tab will be inserted
@@ -210,8 +144,7 @@ local function open_buffers(new_buffers)
       local should_insert_at_start = opts.insert_at_start
       local should_insert_at_end = opts.insert_at_end
         -- We add special buffers at the end
-        or vim.fn.getbufvar(new_buffer, "&buftype")
-          ~= ""
+        or vim.api.nvim_buf_get_option(new_buffer, "buftype") ~= ""
 
       if should_insert_at_start then
         actual_index = 1
@@ -227,30 +160,6 @@ local function open_buffers(new_buffers)
   end
 
   sort_pins_to_left()
-
-  -- We're done if there is no animations
-  if opts.animation == false then
-    return
-  end
-
-  -- Case: opening a lot of buffers from a session
-  -- We avoid animating here as well as it's a bit
-  -- too much work otherwise.
-  if
-    initial_buffers <= 1 and len(new_buffers) > 1
-    or initial_buffers == 0 and len(new_buffers) == 1
-  then
-    return
-  end
-
-  -- Update names because they affect the layout
-  m.update_names()
-
-  local layout = Layout.calculate(m)
-
-  for _, buffer_number in ipairs(new_buffers) do
-    open_buffer_start_animation(layout, buffer_number)
-  end
 end
 
 local function set_current_win_listed_buffer()
@@ -296,32 +205,6 @@ local function close_buffer(buffer_number, should_update_names)
     m.update_names()
   end
   m.update()
-end
-
-local function close_buffer_animated_tick(buffer_number, new_width, animation)
-  if new_width > 0 and m.buffers_by_id[buffer_number] ~= nil then
-    local buffer_data = m.get_buffer_data(buffer_number)
-    buffer_data.width = new_width
-    m.update()
-    return
-  end
-  animate.stop(animation)
-  close_buffer(buffer_number, true)
-end
-
-local function close_buffer_animated(buffer_number)
-  if vim.g.bufferline.animation == false then
-    return close_buffer(buffer_number)
-  end
-  local buffer_data = m.get_buffer_data(buffer_number)
-  local current_width = buffer_data.real_width
-
-  buffer_data.closing = true
-  buffer_data.width = current_width
-
-  animate.start(ANIMATION_CLOSE_DURATION, current_width, 0, vim.v.t_number, function(new_width, m)
-    close_buffer_animated_tick(buffer_number, new_width, m)
-  end)
 end
 
 -- Update state
@@ -401,11 +284,7 @@ function m.get_updated_buffers(update_names)
     if not buffer_data.closing then
       did_change = true
 
-      if buffer_data.real_width == nil then
-        close_buffer(buffer_number)
-      else
-        close_buffer_animated(buffer_number)
-      end
+      close_buffer(buffer_number)
     end
   end
 
@@ -433,99 +312,11 @@ local function set_offset(offset, offset_text)
   if offset_number then
     m.offset = offset_number
     m.offset_text = offset_text or ""
-    m.update()
+    m.rerender()
   end
 end
 
 -- Movement & tab manipulation
-
-local move_animation = nil
-local move_animation_data = nil
-
-local function move_buffer_animated_tick(ratio, current_animation)
-  local data = move_animation_data
-
-  for _, current_number in ipairs(m.buffers) do
-    local current_data = m.get_buffer_data(current_number)
-
-    if current_animation.running == true then
-      current_data.position = animate.lerp(
-        ratio,
-        data.previous_positions[current_number],
-        data.next_positions[current_number]
-      )
-    else
-      current_data.position = nil
-      current_data.moving = false
-    end
-  end
-
-  m.update()
-
-  if current_animation.running == false then
-    move_animation = nil
-    move_animation_data = nil
-  end
-end
-
-local function move_buffer_animated(from_idx, to_idx)
-  local buffer_number = m.buffers[from_idx]
-
-  local layout
-
-  layout = Layout.calculate(m)
-  local previous_positions = Layout.calculate_buffers_position_by_buffer_number(m, layout)
-
-  table.remove(m.buffers, from_idx)
-  table.insert(m.buffers, to_idx, buffer_number)
-
-  sort_pins_to_left()
-
-  local current_index = index_of(m.buffers, buffer_number)
-
-  local start_index = math.min(from_idx, current_index)
-  local end_index = math.max(from_idx, current_index)
-
-  if start_index == end_index then
-    return
-  end
-
-  if move_animation ~= nil then
-    animate.stop(move_animation)
-  end
-
-  layout = Layout.calculate(m)
-  local next_positions = Layout.calculate_buffers_position_by_buffer_number(m, layout)
-
-  for i, _ in ipairs(m.buffers) do
-    local current_number = m.buffers[i]
-    local current_data = m.get_buffer_data(current_number)
-
-    local previous_position = previous_positions[current_number]
-    local next_position = next_positions[current_number]
-
-    if next_position ~= previous_position then
-      current_data.position = previous_positions[current_number]
-      current_data.moving = true
-    end
-  end
-
-  move_animation_data = {
-    previous_positions = previous_positions,
-    next_positions = next_positions,
-  }
-  move_animation = animate.start(
-    ANIMATION_MOVE_DURATION,
-    0,
-    1,
-    vim.v.t_float,
-    function(ratio, current_animation)
-      move_buffer_animated_tick(ratio, current_animation)
-    end
-  )
-
-  m.update()
-end
 
 local function move_buffer_direct(from_idx, to_idx)
   local buffer_number = m.buffers[from_idx]
@@ -533,7 +324,7 @@ local function move_buffer_direct(from_idx, to_idx)
   table.insert(m.buffers, to_idx, buffer_number)
   sort_pins_to_left()
 
-  m.update()
+  m.rerender()
 end
 
 local function move_buffer(from_idx, to_idx)
@@ -542,11 +333,7 @@ local function move_buffer(from_idx, to_idx)
     return
   end
 
-  if vim.g.bufferline.animation == false then
-    move_buffer_direct(from_idx, to_idx)
-  else
-    move_buffer_animated(from_idx, to_idx)
-  end
+  move_buffer_direct(from_idx, to_idx)
 end
 
 local function move_current_buffer_to(number)
@@ -663,7 +450,7 @@ local function hide_buffer(bufnr)
       break
     end
   end
-  m.update()
+  m.rerender()
 end
 
 local function hide_buffer_idx(bufidx)
@@ -688,7 +475,7 @@ local function clone_tab()
   local visible_buffers = m.buffers
   vim.cmd("tab split")
   m.buffers = vim.deepcopy(visible_buffers)
-  m.update()
+  m.rerender()
 end
 
 local function delete_buffer(force, bufnr)
@@ -740,7 +527,7 @@ local function close_all_but_current()
       delete_buffer(false, number)
     end
   end
-  m.update()
+  m.rerender()
 end
 
 local function close_all_but_pinned()
@@ -750,7 +537,7 @@ local function close_all_but_pinned()
       delete_buffer(false, number)
     end
   end
-  m.update()
+  m.rerender()
 end
 
 local function close_buffers_left()
@@ -761,7 +548,7 @@ local function close_buffers_left()
   for i = idx, 1, -1 do
     delete_buffer(false, m.buffers[i])
   end
-  m.update()
+  m.rerender()
 end
 
 local function close_buffers_right()
@@ -772,7 +559,7 @@ local function close_buffers_right()
   for i = idx, len(m.buffers) do
     delete_buffer(false, m.buffers[i])
   end
-  m.update()
+  m.rerender()
 end
 
 -- Ordering
@@ -799,7 +586,7 @@ local function order_by_buffer_number()
   table.sort(m.buffers, function(a, b)
     return a < b
   end)
-  m.update()
+  m.rerender()
 end
 
 local function order_by_directory()
@@ -819,7 +606,7 @@ local function order_by_directory()
       return na < nb
     end)
   )
-  m.update()
+  m.rerender()
 end
 
 local function order_by_language()
@@ -831,7 +618,7 @@ local function order_by_language()
       return na < nb
     end)
   )
-  m.update()
+  m.rerender()
 end
 
 local function order_by_time()
@@ -843,7 +630,7 @@ local function order_by_time()
       return a_score > b_score
     end)
   )
-  m.update()
+  m.rerender()
 end
 
 local function order_by_window_number()
@@ -855,7 +642,7 @@ local function order_by_window_number()
       return na < nb
     end)
   )
-  m.update()
+  m.rerender()
 end
 
 -- vim-session integration
@@ -934,7 +721,7 @@ local function restore_buffers(bufnames)
       table.insert(bufnrs, bufnr)
     end
   end
-  m.update()
+  m.rerender()
 end
 
 -- Exports
@@ -945,7 +732,6 @@ m.set_offset = set_offset
 m.open_buffer_in_listed_window = open_buffer_in_listed_window
 
 m.close_buffer = close_buffer
-m.close_buffer_animated = close_buffer_animated
 m.close_all_but_current = close_all_but_current
 m.close_all_but_pinned = close_all_but_pinned
 m.close_buffers_right = close_buffers_right

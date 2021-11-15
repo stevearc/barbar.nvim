@@ -20,6 +20,7 @@ local bufnr = vim.fn.bufnr
 local strcharpart = vim.fn.strcharpart
 local getbufvar = vim.fn.getbufvar
 
+local should_update_names = true
 local HL_BY_ACTIVITY = {
   [0] = "Inactive",
   [1] = "Visible",
@@ -36,9 +37,9 @@ local function groups_to_string(groups)
   local result = ""
 
   for _, group in ipairs(groups) do
-    local hl = group[1]
+    local hlg = group[1]
     local text = group[2]
-    result = result .. hl .. text
+    result = result .. hlg .. text
   end
 
   return result
@@ -166,9 +167,10 @@ end
 
 -- Rendering
 
-local function render(update_names)
+local function render_unsafe()
   local opts = vim.g.bufferline
-  local buffer_numbers = state.get_updated_buffers(update_names)
+  local buffer_numbers = state.get_updated_buffers(should_update_names)
+  should_update_names = false
 
   if opts.auto_hide then
     if len(buffer_numbers) <= 1 then
@@ -330,7 +332,7 @@ local function render(update_names)
 
   -- Crop to scroll region
   local max_scroll = math.max(layout.actual_width - layout.buffers_width, 0)
-  local scroll = math.min(state.scroll_current, max_scroll)
+  local scroll = math.min(state.scroll, max_scroll)
   local buffers_end = layout.actual_width - scroll
 
   if buffers_end > layout.buffers_width then
@@ -355,9 +357,9 @@ local function render(update_names)
     if opts.tabpages == "left" then
       -- I have no idea why, but the %= on the end is required. Without it, we get
       -- hard crashes from neovim while doing a realloc for the tabline string.
-      result = hl("BufferTabpage") .. tab .. hl('BufferTabpages') .. " " .. result .. "%="
+      result = hl("BufferTabpage") .. tab .. hl("BufferTabpages") .. " " .. result .. "%="
     else
-      result = result .. "%=" .. hl("BufferTabpages") .. " " .. hl('BufferTabpage') .. tab
+      result = result .. "%=" .. hl("BufferTabpages") .. " " .. hl("BufferTabpage") .. tab
     end
   end
 
@@ -366,14 +368,24 @@ local function render(update_names)
   return result
 end
 
-local function render_safe(update_names)
-  local ok, result = xpcall(render, debug.traceback, update_names)
-  return { ok, tostring(result) }
+local function render()
+  local ok, result = xpcall(render_unsafe, debug.traceback)
+  if ok then
+    return result
+  else
+    print(result)
+    vim.cmd("BarbarDisable")
+    return ""
+  end
+end
+
+local function update_names()
+  should_update_names = true
 end
 
 local exports = {
   render = render,
-  render_safe = render_safe,
+  update_names = update_names,
 }
 
 return exports

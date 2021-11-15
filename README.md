@@ -178,9 +178,6 @@ let bufferline = get(g:, 'bufferline', {})
 " Enable to insert them in buffer number order.
 let bufferline.add_in_buffer_number_order = v:false
 
-" Enable/disable animations
-let bufferline.animation = v:true
-
 " Enable/disable auto-hiding the tab bar when there is a single buffer
 let bufferline.auto_hide = v:false
 
@@ -239,9 +236,6 @@ let bufferline.no_name_title = v:null
 ```lua
 -- Set barbar's options
 vim.g.bufferline = {
-  -- Enable/disable animations
-  animation = true,
-
   -- Enable/disable auto-hiding the tab bar when there is a single buffer
   auto_hide = false,
 
