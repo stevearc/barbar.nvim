@@ -113,7 +113,7 @@ local function toggle_pin(bufnr)
   bufnr = bufnr or 0
   vim.api.nvim_buf_set_var(bufnr, PIN, not is_pinned(bufnr))
   sort_pins_to_left()
-  m.update()
+  m.rerender()
 end
 
 -- Scrolling
@@ -204,7 +204,7 @@ local function close_buffer(buffer_number, should_update_names)
   if should_update_names then
     m.update_names()
   end
-  m.update()
+  m.rerender()
 end
 
 -- Update state
