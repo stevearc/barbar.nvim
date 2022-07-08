@@ -692,7 +692,7 @@ local function on_pre_save()
   vim.g.session_save_commands = commands
 end
 
-local function restore_buffers(bufnames)
+local function _restore_buffers(bufnames)
   -- Close all empty buffers. Loading a session may call :tabnew several times
   -- and create useless empty buffers.
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -702,7 +702,7 @@ local function restore_buffers(bufnames)
       and vim.api.nvim_buf_line_count(bufnr) == 1
       and vim.api.nvim_buf_get_lines(bufnr, 0, 1, true)[1] == ""
     then
-      vim.api.nvim_buf_delete(bufnr, {})
+      pcall(vim.api.nvim_buf_delete, bufnr, {})
     end
   end
 
@@ -722,6 +722,21 @@ local function restore_buffers(bufnames)
     end
   end
   m.rerender()
+end
+
+local timer
+local function restore_buffers(bufnames)
+  -- HACK for some reason vim-session fires SessionSavePre multiple times, which
+  -- can lead to multiple 'load' lines in the same session file. We need to make
+  -- sure we only take the first one.
+  if not timer then
+    timer = vim.loop.new_timer()
+    timer:start(50, 0, vim.schedule_wrap(function()
+      _restore_buffers(bufnames)
+      timer:close()
+      timer = nil
+    end))
+  end
 end
 
 -- Exports
