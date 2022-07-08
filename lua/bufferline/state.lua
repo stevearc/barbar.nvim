@@ -7,7 +7,6 @@ local nvim = require("bufferline.nvim")
 local utils = require("bufferline.utils")
 local timing = require("bufferline.timing")
 local Buffer = require("bufferline.buffer")
-local Layout = require("bufferline.layout")
 local len = utils.len
 local index_of = utils.index_of
 local filter = vim.tbl_filter
@@ -68,7 +67,6 @@ function m.new_buffer_data()
     name = nil,
     width = nil,
     position = nil,
-    closing = false,
     real_width = nil,
   }
 end
@@ -251,10 +249,8 @@ function m.update_names()
     else
       local other_i = buffer_index_by_name[name]
       local other_n = m.buffers[other_i]
-      local new_name, new_other_name = Buffer.get_unique_name(
-        bufname(buffer_n),
-        bufname(m.buffers[other_i])
-      )
+      local new_name, new_other_name =
+        Buffer.get_unique_name(bufname(buffer_n), bufname(m.buffers[other_i]))
 
       m.get_buffer_data(buffer_n).name = new_name
       m.get_buffer_data(other_n).name = new_other_name
@@ -274,18 +270,14 @@ function m.get_updated_buffers(update_names)
   -- To know if we need to update names
   local did_change = false
 
-  -- Remove closed or update closing buffers
+  -- Remove closed buffers
   local closed_buffers = filter(function(b)
     return not includes(current_buffers, b)
   end, m.buffers)
 
   for _, buffer_number in ipairs(closed_buffers) do
-    local buffer_data = m.get_buffer_data(buffer_number)
-    if not buffer_data.closing then
-      did_change = true
-
-      close_buffer(buffer_number)
-    end
+    did_change = true
+    close_buffer(buffer_number)
   end
 
   -- Add new buffers
@@ -664,35 +656,40 @@ local function on_pre_save()
     end
   end
 
-  local bufnames = {}
+  local data = { tabs = {}, bufdata = {} }
   for tabpage, buffers in pairs(m.buffers_by_tab) do
     if vim.api.nvim_tabpage_is_valid(tabpage) then
-      local namelist = {}
+      local tab_buf_names = {}
+      -- Using numeric index instead of tabpage because when we restore the
+      -- session the tabpage numbers are lost
+      table.insert(data.tabs, tab_buf_names)
       for _, bufnr in ipairs(buffers) do
         local name = vim.api.nvim_buf_get_name(bufnr)
         if use_relative_file_paths then
           name = vim.fn.fnamemodify(name, ":~:.")
         end
-        -- escape quotes
-        name = string.gsub(name, '"', '\\"')
-        table.insert(namelist, string.format('"%s"', name))
+        data.bufdata[name] = {
+          name = m.buffers_by_id[bufnr].name,
+        }
+        table.insert(tab_buf_names, name)
       end
-      -- Using numeric index instead of tabpage because when we restore the
-      -- session the tabpage numbers are lost
-      table.insert(bufnames, string.format("{%s}", table.concat(namelist, ",")))
     end
   end
-  local serialized = string.format("{%s}", table.concat(bufnames, ","))
+
   local commands = vim.g.session_save_commands
   table.insert(commands, '" barbar.nvim')
+  local str_data = string.gsub(vim.json.encode(data), "\\/", "/")
+  str_data = string.gsub(str_data, "'", "\\'")
   table.insert(
     commands,
-    string.format([[lua require'bufferline.state'.restore_buffers(%s)]], serialized)
+    -- For some reason, vim.json.encode encodes / as \/.
+    string.format("lua require('bufferline.state').restore_buffers('%s')", str_data)
   )
   vim.g.session_save_commands = commands
 end
 
-local function _restore_buffers(bufnames)
+local function _restore_buffers(str_data)
+  local data = vim.json.decode(str_data)
   -- Close all empty buffers. Loading a session may call :tabnew several times
   -- and create useless empty buffers.
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
@@ -707,7 +704,7 @@ local function _restore_buffers(bufnames)
   end
 
   m.buffers_by_tab = {}
-  for tabpage, buffers in pairs(bufnames) do
+  for tabpage, buffers in ipairs(data.tabs) do
     if type(buffers) ~= "table" then
       vim.api.nvim_err_write(
         "Loaded session was saved with old version of barbar. Graceful restore failed.\n"
@@ -721,21 +718,36 @@ local function _restore_buffers(bufnames)
       table.insert(bufnrs, bufnr)
     end
   end
+
+  for name, bufdata in pairs(data.bufdata) do
+    local bufnr = vim.fn.bufadd(name)
+    if not m.buffers_by_id[bufnr] then
+      m.buffers_by_id[bufnr] = m.new_buffer_data()
+    end
+    for k, v in pairs(bufdata) do
+      m.buffers_by_id[bufnr][k] = v
+    end
+  end
+
   m.rerender()
 end
 
 local timer
-local function restore_buffers(bufnames)
+local function restore_buffers(str_data)
   -- HACK for some reason vim-session fires SessionSavePre multiple times, which
   -- can lead to multiple 'load' lines in the same session file. We need to make
   -- sure we only take the first one.
   if not timer then
     timer = vim.loop.new_timer()
-    timer:start(50, 0, vim.schedule_wrap(function()
-      _restore_buffers(bufnames)
-      timer:close()
-      timer = nil
-    end))
+    timer:start(
+      50,
+      0,
+      vim.schedule_wrap(function()
+        _restore_buffers(str_data)
+        timer:close()
+        timer = nil
+      end)
+    )
   end
 end
 

@@ -13,10 +13,10 @@ local SIDES_OF_BUFFER = 2
 
 local function get_tab_dir(tabnr)
   local dir = vim.fn.getcwd(0, tabnr)
-  local home = os.getenv('HOME')
+  local home = os.getenv("HOME")
   local idx, chars = string.find(dir, home)
   if idx == 1 then
-    dir = '~' .. string.sub(dir, idx + chars)
+    dir = "~" .. string.sub(dir, idx + chars)
   end
   return dir
 end
@@ -26,7 +26,7 @@ local function get_tabpage_names()
   local dir_to_name = {}
   local name_to_dir = {}
   local total_tabpages = vim.fn.tabpagenr("$")
-  for i=1,total_tabpages do
+  for i = 1, total_tabpages do
     local dir = get_tab_dir(i)
     tabnr_to_dir[i] = dir
     local name = utils.basename(dir)
@@ -62,7 +62,7 @@ local function get_tabpage_display()
   local tab_names, num_unique = get_tabpage_names()
   local count = string.format("%d/%d", current_tabpage, total_tabpages)
   if num_unique > 1 then
-    count = tab_names[current_tabpage] .. ' ' .. count
+    count = tab_names[current_tabpage] .. " " .. count
   end
   return count
 end
@@ -78,30 +78,25 @@ local function calculate_buffers_width(state, base_width)
     local buffer_data = state.get_buffer_data(buffer_number)
     local buffer_name = buffer_data.name or "[no name]"
 
-    local width
-    if buffer_data.closing then
-      width = buffer_data.real_width
-    else
-      width = base_width
-        + strwidth(
-          Buffer.get_activity(buffer_number) > 0 -- separator
-              and opts.icon_separator_active
-            or opts.icon_separator_inactive
-        )
-        + strwidth(buffer_name) -- name
+    local width = base_width
+      + strwidth(
+        Buffer.get_activity(buffer_number) > 0 -- separator
+            and opts.icon_separator_active
+          or opts.icon_separator_inactive
+      )
+      + strwidth(buffer_name) -- name
 
-      if has_numbers then
-        width = width
-          + len(tostring(i)) -- buffer-index
-          + 1 -- space-after-buffer-index
-      end
+    if has_numbers then
+      width = width
+        + len(tostring(i)) -- buffer-index
+        + 1 -- space-after-buffer-index
+    end
 
-      local is_pinned = state.is_pinned(buffer_number)
+    local is_pinned = state.is_pinned(buffer_number)
 
-      if is_pinned then
-        local icon = opts.icon_pinned
-        width = width + strwidth(icon) + 1 -- space-after-pinned-icon
-      end
+    if is_pinned then
+      local icon = opts.icon_pinned
+      width = width + strwidth(icon) + 1 -- space-after-pinned-icon
     end
     sum = sum + width
     table.insert(widths, width)
