@@ -1,21 +1,15 @@
---
--- utils.lua
---
+local M = {}
 
-local vim = vim
-local nvim = require("bufferline.nvim")
-local fnamemodify = vim.fn.fnamemodify
-local strcharpart = vim.fn.strcharpart
-
-local function len(value)
-  return #value
-end
-
-local function is_nil(value)
+---@param value any
+---@return boolean
+M.is_nil = function(value)
   return value == nil or value == vim.NIL
 end
 
-local function index_of(tbl, n)
+---@param tbl any[]
+---@param n integer
+---@return integer|nil
+M.index_of = function(tbl, n)
   for i, value in ipairs(tbl) do
     if value == n then
       return i
@@ -24,19 +18,15 @@ local function index_of(tbl, n)
   return nil
 end
 
-local function has(tbl, n)
-  return index_of(tbl, n) ~= nil
-end
-
-local function slice(tbl, first, last)
+M.slice = function(tbl, first, last)
   if type(tbl) == "string" then
     if last == nil then
       local start = first - 1
-      return strcharpart(tbl, start)
+      return vim.fn.strcharpart(tbl, start)
     else
       local start = first - 1
       local length = last - first + 1
-      return strcharpart(tbl, start, length)
+      return vim.fn.strcharpart(tbl, start, length)
     end
   end
 
@@ -57,7 +47,10 @@ local function slice(tbl, first, last)
   return sliced
 end
 
-local function reverse(tbl)
+---@generic T: any
+---@param tbl T[]
+---@return T[]
+M.reverse = function(tbl)
   local result = {}
   for i = #tbl, 1, -1 do
     table.insert(result, tbl[i])
@@ -65,53 +58,37 @@ local function reverse(tbl)
   return result
 end
 
-local function collect(iterator)
-  local result = {}
-  for _, v in iterator do
-    table.insert(result, v)
-  end
-  return result
+---@param path string
+---@return string
+M.basename = function(path)
+  return vim.fn.fnamemodify(path, ":t")
 end
 
-local function basename(path)
-  return fnamemodify(path, ":t")
-end
-
-local function is_displayed(opts, buffer)
+M.is_displayed = function(opts, buffer)
   local exclude_ft = opts.exclude_ft
   local exclude_name = opts.exclude_name
 
-  if not nvim.buf_is_valid(buffer) then
+  if not vim.api.nvim_buf_is_valid(buffer) then
     return false
-  elseif not nvim.buf_get_option(buffer, "buflisted") then
+  elseif not vim.api.nvim_buf_get_option(buffer, "buflisted") then
     return false
   end
 
-  if not is_nil(exclude_ft) then
-    local ft = nvim.buf_get_option(buffer, "filetype")
-    if has(exclude_ft, ft) then
+  if not M.is_nil(exclude_ft) then
+    local ft = vim.api.nvim_buf_get_option(buffer, "filetype")
+    if vim.tbl_contains(exclude_ft, ft) then
       return false
     end
   end
 
-  if not is_nil(exclude_name) then
-    local fullname = nvim.buf_get_name(buffer)
-    local name = basename(fullname)
-    if has(exclude_name, name) then
+  if not M.is_nil(exclude_name) then
+    local fullname = vim.api.nvim_buf_get_name(buffer)
+    local name = M.basename(fullname)
+    if vim.tbl_contains(exclude_name, name) then
       return false
     end
   end
   return true
 end
 
-return {
-  len = len,
-  is_nil = is_nil,
-  index_of = index_of,
-  has = has,
-  slice = slice,
-  reverse = reverse,
-  collect = collect,
-  basename = basename,
-  is_displayed = is_displayed,
-}
+return M

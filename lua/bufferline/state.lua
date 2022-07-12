@@ -1,13 +1,6 @@
---
--- m.lua
---
-
-local vim = vim
-local nvim = require("bufferline.nvim")
 local utils = require("bufferline.utils")
 local timing = require("bufferline.timing")
 local Buffer = require("bufferline.buffer")
-local len = utils.len
 local index_of = utils.index_of
 local filter = vim.tbl_filter
 local includes = vim.tbl_contains
@@ -60,7 +53,7 @@ local m = setmetatable({
 -- On startup, make sure all buffers are visible in the tab
 m.buffers = filter(function(b)
   return utils.is_displayed(vim.g.bufferline, b)
-end, nvim.list_bufs())
+end, vim.api.nvim_list_bufs())
 
 function m.new_buffer_data()
   return {
@@ -131,7 +124,7 @@ local function open_buffers(new_buffers)
   if new_index ~= nil then
     new_index = new_index + 1
   else
-    new_index = len(m.buffers) + 1
+    new_index = #m.buffers + 1
   end
 
   -- Insert the buffers where they go
@@ -148,7 +141,7 @@ local function open_buffers(new_buffers)
         actual_index = 1
         new_index = new_index + 1
       elseif should_insert_at_end then
-        actual_index = len(m.buffers) + 1
+        actual_index = #m.buffers + 1
       else
         new_index = new_index + 1
       end
@@ -162,22 +155,22 @@ end
 
 local function set_current_win_listed_buffer()
   local current = vim.fn.bufnr("%")
-  local is_listed = nvim.buf_get_option(current, "buflisted")
+  local is_listed = vim.api.nvim_buf_get_option(current, "buflisted")
 
   -- Check previous window first
   if not is_listed then
-    nvim.command("wincmd p")
+    vim.api.nvim_command("wincmd p")
     current = vim.fn.bufnr("%")
-    is_listed = nvim.buf_get_option(current, "buflisted")
+    is_listed = vim.api.nvim_buf_get_option(current, "buflisted")
   end
   -- Check all windows now
   if not is_listed then
-    local wins = nvim.list_wins()
+    local wins = vim.api.nvim_list_wins()
     for _, win in ipairs(wins) do
-      current = nvim.win_get_buf(win)
-      is_listed = nvim.buf_get_option(current, "buflisted")
+      current = vim.api.nvim_win_get_buf(win)
+      is_listed = vim.api.nvim_buf_get_option(current, "buflisted")
       if is_listed then
-        nvim.set_current_win(win)
+        vim.api.nvim_set_current_win(win)
         break
       end
     end
@@ -189,7 +182,7 @@ end
 local function open_buffer_in_listed_window(buffer_number)
   set_current_win_listed_buffer()
 
-  nvim.command("buffer " .. buffer_number)
+  vim.api.nvim_command("buffer " .. buffer_number)
 end
 
 -- Close & cleanup buffers
@@ -226,7 +219,7 @@ local function get_buffer_list()
     end
     return vim.tbl_keys(result)
   else
-    for _, buffer in pairs(nvim.list_bufs()) do
+    for _, buffer in pairs(vim.api.nvim_list_bufs()) do
       if utils.is_displayed(opts, buffer) then
         table.insert(result, buffer)
       end
@@ -249,8 +242,10 @@ function m.update_names()
     else
       local other_i = buffer_index_by_name[name]
       local other_n = m.buffers[other_i]
-      local new_name, new_other_name =
-        Buffer.get_unique_name(bufname(buffer_n), bufname(m.buffers[other_i]))
+      local new_name, new_other_name = Buffer.get_unique_name(
+        bufname(buffer_n),
+        bufname(m.buffers[other_i])
+      )
 
       m.get_buffer_data(buffer_n).name = new_name
       m.get_buffer_data(other_n).name = new_other_name
@@ -281,7 +276,7 @@ function m.get_updated_buffers(update_names)
   end
 
   -- Add new buffers
-  if len(new_buffers) > 0 then
+  if not vim.tbl_isempty(new_buffers) then
     did_change = true
 
     open_buffers(new_buffers)
@@ -320,7 +315,7 @@ local function move_buffer_direct(from_idx, to_idx)
 end
 
 local function move_buffer(from_idx, to_idx)
-  to_idx = math.max(1, math.min(len(m.buffers), to_idx))
+  to_idx = math.max(1, math.min(#m.buffers, to_idx))
   if to_idx == from_idx then
     return
   end
@@ -332,10 +327,10 @@ local function move_current_buffer_to(number)
   number = tonumber(number)
   m.get_updated_buffers()
   if number == -1 then
-    number = len(m.buffers)
+    number = #m.buffers
   end
 
-  local currentnr = nvim.get_current_buf()
+  local currentnr = vim.api.nvim_get_current_buf()
   local idx = index_of(m.buffers, currentnr)
   move_buffer(idx, number)
 end
@@ -343,7 +338,7 @@ end
 local function move_current_buffer(steps)
   m.get_updated_buffers()
 
-  local currentnr = nvim.get_current_buf()
+  local currentnr = vim.api.nvim_get_current_buf()
   local idx = index_of(m.buffers, currentnr)
 
   move_buffer(idx, idx + steps)
@@ -356,14 +351,14 @@ local function goto_buffer(number)
 
   local idx
   if number == -1 then
-    idx = len(m.buffers)
-  elseif number > len(m.buffers) then
+    idx = #m.buffers
+  elseif number > #m.buffers then
     return
   else
     idx = number
   end
 
-  nvim.command("buffer " .. m.buffers[idx])
+  vim.api.nvim_command("buffer " .. m.buffers[idx])
 end
 
 local function goto_buffer_relative(steps)
@@ -377,10 +372,10 @@ local function goto_buffer_relative(steps)
     print("Couldn't find buffer " .. current .. " in the list: " .. vim.inspect(m.buffers))
     return
   else
-    idx = (idx + steps - 1) % len(m.buffers) + 1
+    idx = (idx + steps - 1) % #m.buffers + 1
   end
 
-  nvim.command("buffer " .. m.buffers[idx])
+  vim.api.nvim_command("buffer " .. m.buffers[idx])
 end
 
 -- Close commands
@@ -512,7 +507,7 @@ local function delete_buffer_idx(force, bufidx)
 end
 
 local function close_all_but_current()
-  local current = nvim.get_current_buf()
+  local current = vim.api.nvim_get_current_buf()
   local buffers = m.buffers
   for _, number in ipairs(buffers) do
     if number ~= current then
@@ -533,7 +528,7 @@ local function close_all_but_pinned()
 end
 
 local function close_buffers_left()
-  local idx = index_of(m.buffers, nvim.get_current_buf()) - 1
+  local idx = index_of(m.buffers, vim.api.nvim_get_current_buf()) - 1
   if idx == nil then
     return
   end
@@ -544,11 +539,11 @@ local function close_buffers_left()
 end
 
 local function close_buffers_right()
-  local idx = index_of(m.buffers, nvim.get_current_buf()) + 1
+  local idx = index_of(m.buffers, vim.api.nvim_get_current_buf()) + 1
   if idx == nil then
     return
   end
-  for i = idx, len(m.buffers) do
+  for i = idx, #m.buffers do
     delete_buffer(false, m.buffers[i])
   end
   m.rerender()

@@ -6,7 +6,6 @@ local vim = vim
 local utils = require("bufferline.utils")
 local split = vim.split
 local join = table.concat
-local len = utils.len
 local slice = utils.slice
 local basename = utils.basename
 local bufname = vim.fn.bufname
@@ -81,10 +80,10 @@ local function get_unique_name(first, second)
   local first_result = join(slice(first_parts, -length), separator)
   local second_result = join(slice(second_parts, -length), separator)
 
-  while first_result == second_result and length < math.max(len(first_parts), len(second_parts)) do
+  while first_result == second_result and length < math.max(#first_parts, #second_parts) do
     length = length + 1
-    first_result = join(slice(first_parts, -math.min(len(first_parts), length)), separator)
-    second_result = join(slice(second_parts, -math.min(len(second_parts), length)), separator)
+    first_result = join(slice(first_parts, -math.min(#first_parts, length)), separator)
+    second_result = join(slice(second_parts, -math.min(#second_parts, length)), separator)
   end
 
   return first_result, second_result

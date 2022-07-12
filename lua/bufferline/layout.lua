@@ -3,11 +3,9 @@
 --
 
 local vim = vim
-local nvim = require("bufferline.nvim")
 local utils = require("bufferline.utils")
 local Buffer = require("bufferline.buffer")
-local len = utils.len
-local strwidth = nvim.strwidth
+local strwidth = vim.api.nvim_strwidth
 
 local SIDES_OF_BUFFER = 2
 
@@ -88,7 +86,7 @@ local function calculate_buffers_width(state, base_width)
 
     if has_numbers then
       width = width
-        + len(tostring(i)) -- buffer-index
+        + #tostring(i) -- buffer-index
         + 1 -- space-after-buffer-index
     end
 
@@ -138,7 +136,7 @@ local function calculate(state)
 
   local buffers_width = available_width - tabpages_width
 
-  local buffers_length = len(state.buffers)
+  local buffers_length = #state.buffers
   local remaining_width = math.max(buffers_width - used_width, 0)
   local remaining_width_per_buffer = math.floor(remaining_width / buffers_length)
   local remaining_padding_per_buffer = math.floor(remaining_width_per_buffer / SIDES_OF_BUFFER)

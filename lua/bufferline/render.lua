@@ -1,24 +1,12 @@
--- !::exe [luafile %]
---
--- render.lua
---
-
-local vim = vim
-local api = vim.api
-local nvim = require("bufferline.nvim")
 local utils = require("bufferline.utils")
 local icons = require("bufferline.icons")
 local state = require("bufferline.state")
 local Buffer = require("bufferline.buffer")
 local Layout = require("bufferline.layout")
-local get_icon = icons.get_icon
-local len = utils.len
 local slice = utils.slice
-local strwidth = nvim.strwidth
 local reverse = utils.reverse
-local bufnr = vim.fn.bufnr
-local strcharpart = vim.fn.strcharpart
-local getbufvar = vim.fn.getbufvar
+
+local M = {}
 
 local should_update_names = true
 local HL_BY_ACTIVITY = {
@@ -51,9 +39,9 @@ local function groups_insert(groups, position, others)
   local new_groups = {}
 
   local i = 1
-  while i <= len(groups) do
+  while i <= #groups do
     local group = groups[i]
-    local group_width = strwidth(group[2])
+    local group_width = vim.api.nvim_strwidth(group[2])
 
     -- While we haven't found the position...
     if current_position + group_width <= position then
@@ -73,8 +61,8 @@ local function groups_insert(groups, position, others)
 
       -- Add new other groups
       local others_width = 0
-      for j, other in ipairs(others) do
-        local other_width = strwidth(other[2])
+      for _, other in ipairs(others) do
+        local other_width = vim.api.nvim_strwidth(other[2])
         others_width = others_width + other_width
         table.insert(new_groups, other)
       end
@@ -83,9 +71,9 @@ local function groups_insert(groups, position, others)
 
       -- Then, resume adding previous groups
       -- table.insert(new_groups, 'then')
-      while i <= len(groups) do
+      while i <= #groups do
         local group = groups[i]
-        local group_width = strwidth(group[2])
+        local group_width = vim.api.nvim_strwidth(group[2])
         local group_start_position = current_position
         local group_end_position = current_position + group_width
 
@@ -122,13 +110,13 @@ local function slice_groups_right(groups, width)
   for _, group in ipairs(groups) do
     local hl = group[1]
     local text = group[2]
-    local text_width = strwidth(text)
+    local text_width = vim.api.nvim_strwidth(text)
 
     accumulated_width = accumulated_width + text_width
 
     if accumulated_width >= width then
       local diff = text_width - (accumulated_width - width)
-      local new_group = { hl, strcharpart(text, 0, diff) }
+      local new_group = { hl, vim.fn.strcharpart(text, 0, diff) }
       table.insert(new_groups, new_group)
       break
     end
@@ -147,14 +135,14 @@ local function slice_groups_left(groups, width)
   for _, group in ipairs(reverse(groups)) do
     local hl = group[1]
     local text = group[2]
-    local text_width = strwidth(text)
+    local text_width = vim.api.nvim_strwidth(text)
 
     accumulated_width = accumulated_width + text_width
 
     if accumulated_width >= width then
       local length = text_width - (accumulated_width - width)
       local start = text_width - length
-      local new_group = { hl, strcharpart(text, start, length) }
+      local new_group = { hl, vim.fn.strcharpart(text, start, length) }
       table.insert(new_groups, 1, new_group)
       break
     end
@@ -173,7 +161,7 @@ local function render_unsafe()
   should_update_names = false
 
   if opts.auto_hide then
-    if len(buffer_numbers) <= 1 then
+    if #buffer_numbers <= 1 then
       if vim.o.showtabline == 2 then
         vim.o.showtabline = 0
       end
@@ -184,11 +172,11 @@ local function render_unsafe()
     end
   end
 
-  local current = bufnr("%")
+  local current = vim.api.nvim_get_current_buf()
 
   -- Store current buffer to open new ones next to this one
-  if nvim.buf_get_option(current, "buflisted") then
-    local ok, is_empty = pcall(api.nvim_buf_get_var, current, "empty_buffer")
+  if vim.api.nvim_buf_get_option(current, "buflisted") then
+    local ok, is_empty = pcall(vim.api.nvim_buf_get_var, current, "empty_buffer")
     if ok and is_empty then
       state.last_current_buffer = nil
     else
@@ -221,7 +209,7 @@ local function render_unsafe()
     local activity = Buffer.get_activity(buffer_number)
     local is_inactive = activity == 0
     local is_current = activity == 2
-    local is_modified = nvim.buf_get_option(buffer_number, "modified")
+    local is_modified = vim.api.nvim_buf_get_option(buffer_number, "modified")
     local is_pinned = state.is_pinned(buffer_number)
 
     local status = HL_BY_ACTIVITY[activity]
@@ -249,7 +237,7 @@ local function render_unsafe()
     end
 
     if has_icons then
-      local iconChar, iconHl = get_icon(buffer_name, getbufvar(buffer_number, "&filetype"), status)
+      local iconChar, iconHl = icons.get_icon(buffer_number, status)
       local hlName = is_inactive and "BufferInactive" or iconHl
       iconPrefix = has_icon_custom_colors and hl("Buffer" .. status .. "Icon")
         or hlName and hl(hlName)
@@ -311,7 +299,7 @@ local function render_unsafe()
       { "", state.offset_text },
     }
     result = result .. groups_to_string(slice_groups_right(groups, offset_available_width))
-    result = result .. string.rep(" ", offset_available_width - len(state.offset_text))
+    result = result .. string.rep(" ", offset_available_width - #state.offset_text)
     result = result .. " "
   end
 
@@ -346,8 +334,9 @@ local function render_unsafe()
   result = result .. groups_to_string(bufferline_groups) .. hl("BufferTabpageFill")
 
   if
-    layout.actual_width + strwidth(opts.icon_separator_inactive) <= layout.buffers_width
-    and len(items) > 0
+    layout.actual_width + vim.api.nvim_strwidth(opts.icon_separator_inactive)
+      <= layout.buffers_width
+    and not vim.tbl_isempty(items)
   then
     result = result .. opts.icon_separator_inactive
   end
@@ -368,7 +357,7 @@ local function render_unsafe()
   return result
 end
 
-local function render()
+M.render = function()
   local ok, result = xpcall(render_unsafe, debug.traceback)
   if ok then
     return result
@@ -379,13 +368,8 @@ local function render()
   end
 end
 
-local function update_names()
+M.update_names = function()
   should_update_names = true
 end
 
-local exports = {
-  render = render,
-  update_names = update_names,
-}
-
-return exports
+return M
