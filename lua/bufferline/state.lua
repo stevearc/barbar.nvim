@@ -242,10 +242,8 @@ function m.update_names()
     else
       local other_i = buffer_index_by_name[name]
       local other_n = m.buffers[other_i]
-      local new_name, new_other_name = Buffer.get_unique_name(
-        bufname(buffer_n),
-        bufname(m.buffers[other_i])
-      )
+      local new_name, new_other_name =
+        Buffer.get_unique_name(bufname(buffer_n), bufname(m.buffers[other_i]))
 
       m.get_buffer_data(buffer_n).name = new_name
       m.get_buffer_data(other_n).name = new_other_name
@@ -402,16 +400,25 @@ local function get_fallback_buffer(bufnr)
   for i, listed_buf in ipairs(m.buffers) do
     if listed_buf == bufnr then
       found = true
-      if i > 1 then
-        return m.buffers[i - 1]
-      elseif i < #m.buffers then
-        return m.buffers[i + 1]
+      for j = i - 1, 1, -1 do
+        if vim.api.nvim_buf_is_valid(m.buffers[j]) then
+          return m.buffers[j]
+        end
+      end
+      for j = i + 1, #m.buffers do
+        if vim.api.nvim_buf_is_valid(m.buffers[j]) then
+          return m.buffers[j]
+        end
       end
     end
   end
 
   if not found and not vim.tbl_isempty(m.buffers) then
-    return m.buffers[1]
+    for _, buf in ipairs(m.buffers) do
+      if vim.api.nvim_buf_is_valid(buf) then
+        return buf
+      end
+    end
   end
 
   return nil
