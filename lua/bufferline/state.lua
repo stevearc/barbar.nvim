@@ -242,8 +242,10 @@ function m.update_names()
     else
       local other_i = buffer_index_by_name[name]
       local other_n = m.buffers[other_i]
-      local new_name, new_other_name =
-        Buffer.get_unique_name(bufname(buffer_n), bufname(m.buffers[other_i]))
+      local new_name, new_other_name = Buffer.get_unique_name(
+        bufname(buffer_n),
+        bufname(m.buffers[other_i])
+      )
 
       m.get_buffer_data(buffer_n).name = new_name
       m.get_buffer_data(other_n).name = new_other_name
@@ -639,120 +641,6 @@ local function order_by_window_number()
   m.rerender()
 end
 
--- vim-session integration
-
-local function on_pre_save()
-  -- We're allowed to use relative paths for buffers iff there are no tabpages
-  -- or windows with a local directory (:tcd and :lcd)
-  local use_relative_file_paths = true
-  for tabnr, tabpage in ipairs(vim.api.nvim_list_tabpages()) do
-    if not use_relative_file_paths or vim.fn.haslocaldir(-1, tabnr) == 1 then
-      use_relative_file_paths = false
-      break
-    end
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tabpage)) do
-      if vim.fn.haslocaldir(win, tabnr) == 1 then
-        use_relative_file_paths = false
-        break
-      end
-    end
-  end
-
-  local data = { tabs = {}, bufdata = {} }
-  for tabpage, buffers in pairs(m.buffers_by_tab) do
-    if vim.api.nvim_tabpage_is_valid(tabpage) then
-      local tab_buf_names = {}
-      -- Using numeric index instead of tabpage because when we restore the
-      -- session the tabpage numbers are lost
-      table.insert(data.tabs, tab_buf_names)
-      for _, bufnr in ipairs(buffers) do
-        local name = vim.api.nvim_buf_get_name(bufnr)
-        if use_relative_file_paths then
-          name = vim.fn.fnamemodify(name, ":~:.")
-        end
-        data.bufdata[name] = {
-          name = m.buffers_by_id[bufnr].name,
-        }
-        table.insert(tab_buf_names, name)
-      end
-    end
-  end
-
-  local commands = vim.g.session_save_commands
-  table.insert(commands, '" barbar.nvim')
-  local str_data = string.gsub(vim.json.encode(data), "\\/", "/")
-  str_data = string.gsub(str_data, "'", "\\'")
-  table.insert(
-    commands,
-    -- For some reason, vim.json.encode encodes / as \/.
-    string.format("lua require('bufferline.state').restore_buffers('%s')", str_data)
-  )
-  vim.g.session_save_commands = commands
-end
-
-local function _restore_buffers(str_data)
-  local data = vim.json.decode(str_data)
-  -- Close all empty buffers. Loading a session may call :tabnew several times
-  -- and create useless empty buffers.
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if
-      vim.api.nvim_buf_get_name(bufnr) == ""
-      and vim.api.nvim_buf_get_option(bufnr, "buftype") == ""
-      and vim.api.nvim_buf_line_count(bufnr) == 1
-      and vim.api.nvim_buf_get_lines(bufnr, 0, 1, true)[1] == ""
-    then
-      pcall(vim.api.nvim_buf_delete, bufnr, {})
-    end
-  end
-
-  m.buffers_by_tab = {}
-  for tabpage, buffers in ipairs(data.tabs) do
-    if type(buffers) ~= "table" then
-      vim.api.nvim_err_write(
-        "Loaded session was saved with old version of barbar. Graceful restore failed.\n"
-      )
-      return
-    end
-    local bufnrs = {}
-    m.buffers_by_tab[tabpage] = bufnrs
-    for _, name in ipairs(buffers) do
-      local bufnr = vim.fn.bufadd(name)
-      table.insert(bufnrs, bufnr)
-    end
-  end
-
-  for name, bufdata in pairs(data.bufdata) do
-    local bufnr = vim.fn.bufadd(name)
-    if not m.buffers_by_id[bufnr] then
-      m.buffers_by_id[bufnr] = m.new_buffer_data()
-    end
-    for k, v in pairs(bufdata) do
-      m.buffers_by_id[bufnr][k] = v
-    end
-  end
-
-  m.rerender()
-end
-
-local timer
-local function restore_buffers(str_data)
-  -- HACK for some reason vim-session fires SessionSavePre multiple times, which
-  -- can lead to multiple 'load' lines in the same session file. We need to make
-  -- sure we only take the first one.
-  if not timer then
-    timer = vim.loop.new_timer()
-    timer:start(
-      50,
-      0,
-      vim.schedule_wrap(function()
-        _restore_buffers(str_data)
-        timer:close()
-        timer = nil
-      end)
-    )
-  end
-end
-
 -- Exports
 
 m.set_scroll = set_scroll
@@ -786,8 +674,5 @@ m.order_by_directory = order_by_directory
 m.order_by_language = order_by_language
 m.order_by_time = order_by_time
 m.order_by_window_number = order_by_window_number
-
-m.on_pre_save = on_pre_save
-m.restore_buffers = restore_buffers
 
 return m

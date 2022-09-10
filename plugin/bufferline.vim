@@ -11,7 +11,6 @@ function! bufferline#enable()
       au!
       au VimEnter       * call bufferline#highlight#setup()
       au ColorScheme    * call bufferline#highlight#setup()
-      au User SessionSavePre lua require'bufferline.state'.on_pre_save()
    augroup END
 
    augroup bufferline_update
