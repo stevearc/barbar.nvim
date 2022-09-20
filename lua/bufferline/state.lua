@@ -242,10 +242,8 @@ function m.update_names()
     else
       local other_i = buffer_index_by_name[name]
       local other_n = m.buffers[other_i]
-      local new_name, new_other_name = Buffer.get_unique_name(
-        bufname(buffer_n),
-        bufname(m.buffers[other_i])
-      )
+      local new_name, new_other_name =
+        Buffer.get_unique_name(bufname(buffer_n), bufname(m.buffers[other_i]))
 
       m.get_buffer_data(buffer_n).name = new_name
       m.get_buffer_data(other_n).name = new_other_name

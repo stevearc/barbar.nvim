@@ -176,6 +176,8 @@ endfunc
 
 " Final setup
 
-call bufferline#enable()
+if !g:barbar_disable
+  call bufferline#enable()
+end
 
 let g:bufferline# = s:
