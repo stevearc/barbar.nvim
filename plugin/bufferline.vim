@@ -176,7 +176,7 @@ endfunc
 
 " Final setup
 
-if !g:barbar_disable
+if !get(g:, 'barbar_disable')
   call bufferline#enable()
 end
 
